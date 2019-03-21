@@ -56,7 +56,6 @@ class ResultTypeResolver(
         } else {
             c.resultType(superType, subType, variableWithConstraints)
         }
-
         return result
     }
 

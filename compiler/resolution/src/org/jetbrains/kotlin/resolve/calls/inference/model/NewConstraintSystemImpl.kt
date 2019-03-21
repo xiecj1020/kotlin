@@ -13,12 +13,14 @@ import org.jetbrains.kotlin.resolve.calls.inference.components.KotlinConstraintS
 import org.jetbrains.kotlin.resolve.calls.inference.components.NewTypeSubstitutor
 import org.jetbrains.kotlin.resolve.calls.inference.components.ResultTypeResolver
 import org.jetbrains.kotlin.resolve.calls.model.KotlinCallDiagnostic
-import org.jetbrains.kotlin.types.StubType
-import org.jetbrains.kotlin.types.TypeConstructor
-import org.jetbrains.kotlin.types.UnwrappedType
+import org.jetbrains.kotlin.resolve.calls.model.OnlyInputTypesDiagnostic
+import org.jetbrains.kotlin.types.*
+import org.jetbrains.kotlin.types.checker.NewKotlinTypeChecker
 import org.jetbrains.kotlin.types.typeUtil.contains
 import org.jetbrains.kotlin.types.typeUtil.isUnit
+import org.jetbrains.kotlin.types.typesApproximation.approximateCapturedTypes
 import org.jetbrains.kotlin.utils.SmartList
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class NewConstraintSystemImpl(
     private val constraintInjector: ConstraintInjector,
@@ -33,6 +35,7 @@ class NewConstraintSystemImpl(
     private val storage = MutableConstraintStorage()
     private var state = State.BUILDING
     private val typeVariablesTransaction: MutableList<NewTypeVariable> = SmartList()
+    private val typeApproximator = TypeApproximator()
 
     private enum class State {
         BUILDING,
@@ -242,7 +245,8 @@ class NewConstraintSystemImpl(
         checkState(State.BUILDING, State.COMPLETION)
 
         constraintInjector.addInitialEqualityConstraint(this, variable.defaultType, resultType, FixVariableConstraintPosition(variable))
-        notFixedTypeVariables.remove(variable.freshTypeConstructor)
+        val variableWithConstraints = notFixedTypeVariables.remove(variable.freshTypeConstructor)
+        checkOnlyInputTypesAnnotation(variableWithConstraints, resultType)
 
         for (variableWithConstraint in notFixedTypeVariables.values) {
             variableWithConstraint.removeConstrains {
@@ -251,6 +255,25 @@ class NewConstraintSystemImpl(
         }
 
         storage.fixedTypeVariables[variable.freshTypeConstructor] = resultType
+    }
+
+    private fun checkOnlyInputTypesAnnotation(
+        variableWithConstraints: MutableVariableWithConstraints?,
+        resultType: UnwrappedType
+    ) {
+        if (variableWithConstraints == null || !variableWithConstraints.typeVariable.hasOnlyInputTypesAnnotation()) return
+        val projectedInputCallTypes = variableWithConstraints.projectedInputCallTypes
+        val resultTypeIsInputType = projectedInputCallTypes.any { inputType ->
+            val approximatedType = typeApproximator.approximateToSuperType(inputType, TypeApproximatorConfiguration.CapturedTypesApproximation) ?: inputType
+            val constructor = approximatedType.constructor
+            if (constructor is IntersectionTypeConstructor)
+                constructor.supertypes.any { NewKotlinTypeChecker.equalTypes(resultType, it) }
+            else
+                NewKotlinTypeChecker.equalTypes(resultType, approximatedType)
+        }
+        if (!resultTypeIsInputType) {
+            addError(OnlyInputTypesDiagnostic(variableWithConstraints.typeVariable))
+        }
     }
 
     // KotlinConstraintSystemCompleter.Context, PostponedArgumentsAnalyzer.Context
