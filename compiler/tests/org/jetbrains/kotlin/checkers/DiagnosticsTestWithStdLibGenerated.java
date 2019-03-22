@@ -2733,6 +2733,11 @@ public class DiagnosticsTestWithStdLibGenerated extends AbstractDiagnosticsTestW
                 runTest("compiler/testData/diagnostics/testsWithStdLib/inference/annotationsForResolve/noInferAnnotation.kt");
             }
 
+            @TestMetadata("onlyInputTypes.kt")
+            public void testOnlyInputTypes() throws Exception {
+                runTest("compiler/testData/diagnostics/testsWithStdLib/inference/annotationsForResolve/onlyInputTypes.kt");
+            }
+
             @TestMetadata("onlyInputTypesAndLowPriority.kt")
             public void testOnlyInputTypesAndLowPriority() throws Exception {
                 runTest("compiler/testData/diagnostics/testsWithStdLib/inference/annotationsForResolve/onlyInputTypesAndLowPriority.kt");

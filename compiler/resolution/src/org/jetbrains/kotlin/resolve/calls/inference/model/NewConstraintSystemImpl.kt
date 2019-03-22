@@ -18,9 +18,7 @@ import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.checker.NewKotlinTypeChecker
 import org.jetbrains.kotlin.types.typeUtil.contains
 import org.jetbrains.kotlin.types.typeUtil.isUnit
-import org.jetbrains.kotlin.types.typesApproximation.approximateCapturedTypes
 import org.jetbrains.kotlin.utils.SmartList
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class NewConstraintSystemImpl(
     private val constraintInjector: ConstraintInjector,
@@ -264,7 +262,7 @@ class NewConstraintSystemImpl(
         if (variableWithConstraints == null || !variableWithConstraints.typeVariable.hasOnlyInputTypesAnnotation()) return
         val projectedInputCallTypes = variableWithConstraints.projectedInputCallTypes
         val resultTypeIsInputType = projectedInputCallTypes.any { inputType ->
-            val approximatedType = typeApproximator.approximateToSuperType(inputType, TypeApproximatorConfiguration.CapturedTypesApproximation) ?: inputType
+            val approximatedType = typeApproximator.approximateToSuperType(inputType, TypeApproximatorConfiguration.CapturedAndIntegerLiteralsTypesApproximation) ?: inputType
             val constructor = approximatedType.constructor
             if (constructor is IntersectionTypeConstructor)
                 constructor.supertypes.any { NewKotlinTypeChecker.equalTypes(resultType, it) }
