@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.script.ScriptContentLoader
 import org.jetbrains.kotlin.script.ScriptReportSink
 import org.jetbrains.kotlin.script.adjustByDefinition
 import kotlin.script.experimental.dependencies.DependenciesResolver
+import kotlin.script.experimental.dependencies.ScriptDependencies
 
 abstract class ScriptDependenciesLoader(protected val project: Project) {
 
@@ -86,11 +87,14 @@ abstract class ScriptDependenciesLoader(protected val project: Project) {
         }
 
         val dependencies = result.dependencies?.adjustByDefinition(scriptDef) ?: return
+        saveToCache(file, dependencies)
+    }
+
+    protected fun saveToCache(file: VirtualFile, dependencies: ScriptDependencies) {
         val rootsChanged = cache.hasNotCachedRoots(dependencies)
         if (cache.save(file, dependencies)) {
             file.scriptDependencies = dependencies
         }
-
         if (rootsChanged) {
             shouldNotifyRootsChanged = true
         }
