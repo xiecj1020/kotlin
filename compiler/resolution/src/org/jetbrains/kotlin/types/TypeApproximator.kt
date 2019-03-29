@@ -25,10 +25,7 @@ import org.jetbrains.kotlin.types.TypeApproximatorConfiguration.IntersectionStra
 import org.jetbrains.kotlin.types.checker.*
 import org.jetbrains.kotlin.types.model.CaptureStatus
 import org.jetbrains.kotlin.types.model.CaptureStatus.*
-import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
-import org.jetbrains.kotlin.types.typeUtil.builtIns
-import org.jetbrains.kotlin.types.typeUtil.isNothing
-import org.jetbrains.kotlin.types.typeUtil.isNullableAny
+import org.jetbrains.kotlin.types.typeUtil.*
 
 
 open class TypeApproximatorConfiguration {
@@ -215,7 +212,7 @@ class TypeApproximator {
             // commonSupertypeCalculator should handle flexible types correctly
             TO_COMMON_SUPERTYPE -> {
                 if (!toSuper) return type.defaultResult(toSuper = false)
-                val resultType = NewCommonSuperTypeCalculator.commonSuperType(newTypes)
+                val resultType = NewCommonSuperTypeCalculator.commonSuperType(newTypes.map { it.replaceCapturedTypesInArgumentsWithProjections().unwrap() })
                 approximateToSuperType(resultType.unwrap(), conf) ?: resultType.unwrap()
             }
         }

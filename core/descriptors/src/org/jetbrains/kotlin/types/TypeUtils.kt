@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
 import org.jetbrains.kotlin.types.checker.NewCapturedType
 import org.jetbrains.kotlin.types.checker.NewTypeVariableConstructor
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.util.*
 
 enum class TypeNullability {
@@ -182,6 +183,29 @@ fun KotlinType.contains(predicate: (UnwrappedType) -> Boolean) = TypeUtils.conta
 
 fun KotlinType.replaceArgumentsWithStarProjections() = replaceArgumentsWith(::StarProjectionImpl)
 fun KotlinType.replaceArgumentsWithNothing() = replaceArgumentsWith { it.builtIns.nothingType.asTypeProjection() }
+
+fun KotlinType.replaceCapturedTypesInArgumentsWithProjections(): KotlinType {
+    val unwrapped = unwrap()
+    return when (unwrapped) {
+        is FlexibleType -> KotlinTypeFactory.flexibleType(
+            unwrapped.lowerBound.replaceCapturedTypesInArgumentsWithProjections(),
+            unwrapped.upperBound.replaceCapturedTypesInArgumentsWithProjections()
+        )
+        is SimpleType -> unwrapped.replaceCapturedTypesInArgumentsWithProjections()
+    }.inheritEnhancement(unwrapped)
+}
+
+private fun SimpleType.replaceCapturedTypesInArgumentsWithProjections(): SimpleType {
+    if (constructor.parameters.isEmpty() || constructor.declarationDescriptor == null) return this
+
+    val newArguments = arguments.map { argument ->
+        argument.type.safeAs<NewCapturedType>()?.let { it.constructor.projection } ?: argument.let {
+            TypeProjectionImpl(it.projectionKind, it.type.replaceCapturedTypesInArgumentsWithProjections())
+        }
+    }
+
+    return replace(newArguments)
+}
 
 private inline fun KotlinType.replaceArgumentsWith(replacement: (TypeParameterDescriptor) -> TypeProjection): KotlinType {
     val unwrapped = unwrap()

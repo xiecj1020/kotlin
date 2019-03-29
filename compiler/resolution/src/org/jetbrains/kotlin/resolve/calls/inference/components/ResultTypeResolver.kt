@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.checker.intersectTypes
 import org.jetbrains.kotlin.types.checker.isIntegerLiteralType
 import org.jetbrains.kotlin.types.typeUtil.contains
+import org.jetbrains.kotlin.types.typeUtil.replaceCapturedTypesInArgumentsWithProjections
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class ResultTypeResolver(
@@ -89,7 +90,7 @@ class ResultTypeResolver(
     private fun findSubType(c: Context, variableWithConstraints: VariableWithConstraints): UnwrappedType? {
         val lowerConstraints = variableWithConstraints.constraints.filter { it.kind == ConstraintKind.LOWER && c.isProperType(it.type) }
         if (lowerConstraints.isNotEmpty()) {
-            val types = sinkIntegerLiteralTypes(lowerConstraints.map { it.type })
+            val types = sinkIntegerLiteralTypes(lowerConstraints.map { it.type.replaceCapturedTypesInArgumentsWithProjections().unwrap() })
             val commonSuperType = NewCommonSuperTypeCalculator.commonSuperType(types)
             /**
              *
