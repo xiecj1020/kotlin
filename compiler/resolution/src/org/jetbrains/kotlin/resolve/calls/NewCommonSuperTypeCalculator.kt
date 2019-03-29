@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.types.checker.*
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.types.typeUtil.canHaveUndefinedNullability
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 object NewCommonSuperTypeCalculator {
 
@@ -213,8 +214,16 @@ object NewCommonSuperTypeCalculator {
         if (parameter.variance != Variance.INVARIANT) {
             asOut = parameter.variance == Variance.OUT_VARIANCE
         } else {
-            val thereIsOut = arguments.any { it.projectionKind == Variance.OUT_VARIANCE }
-            val thereIsIn = arguments.any { it.projectionKind == Variance.IN_VARIANCE }
+            fun TypeProjection.checkProjection(kind: Variance): Boolean {
+                return projectionKind == kind || type.safeAs<NewCapturedType>()?.constructor?.projection?.checkProjection(kind) == true
+            }
+
+            val thereIsOut = arguments.any { it.checkProjection(Variance.OUT_VARIANCE) }
+            val thereIsIn = arguments.any { it.checkProjection(Variance.IN_VARIANCE) }
+
+//            val thereIsOut = arguments.any { it.projectionKind == Variance.OUT_VARIANCE }
+//            val thereIsIn = arguments.any { it.projectionKind == Variance.IN_VARIANCE }
+
             if (thereIsOut) {
                 if (thereIsIn) {
                     // CS(Inv<out X>, Inv<in Y>) = Inv<*>

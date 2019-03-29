@@ -1,5 +1,4 @@
 // !WITH_NEW_INFERENCE
-// !LANGUAGE: -NewInference
 // !DIAGNOSTICS: -UNUSED_VARIABLE -UNUSED_PARAMETER
 // Issue: KT-26698
 
@@ -20,14 +19,14 @@ public fun <@kotlin.internal.OnlyInputTypes T> Iterable<T>.foo(element: T): T = 
 class Inv<T>
 class Inv2<T, R>
 
-//fun test_2(x: Inv<in Number>, list: List<Inv<Number>>) {
-//    list.contains1(x)
-//}
+fun test_2(x: Inv<in Number>, list: List<Inv<Number>>) {
+    <!DEBUG_INFO_EXPRESSION_TYPE("Inv<in kotlin.Number>")!>list.foo(x)<!>
+}
 
-//fun test_3(x: Inv<in Number>, list: List<Inv<Int>>) {
-//    list.<!TYPE_INFERENCE_ONLY_INPUT_TYPES!>contains1<!>(x)
-//}
+fun test_3(x: Inv<in Number>, list: List<Inv<Int>>) {
+    list.<!TYPE_INFERENCE_ONLY_INPUT_TYPES!>contains1<!>(x)
+}
 
 fun test_4(x: Inv2<in Number, out Number>, list: List<Inv2<Any, Int>>) {
-    <!DEBUG_INFO_EXPRESSION_TYPE("Inv2<out kotlin.Any?, out kotlin.Number>")!>list.<!NI;TYPE_INFERENCE_ONLY_INPUT_TYPES!>foo<!>(x)<!>
+    <!DEBUG_INFO_EXPRESSION_TYPE("Inv2<in kotlin.Number, out kotlin.Number>")!>list.foo(x)<!>
 }

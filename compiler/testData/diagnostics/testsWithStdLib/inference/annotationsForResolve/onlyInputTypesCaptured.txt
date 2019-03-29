@@ -1,16 +1,20 @@
 package
 
-public fun test(/*0*/ clazz: Class<*>, /*1*/ list: kotlin.collections.List<Class<kotlin.Int>>): kotlin.Unit
+public fun test_2(/*0*/ x: Inv<in kotlin.Number>, /*1*/ list: kotlin.collections.List<Inv<kotlin.Number>>): kotlin.Unit
+public fun test_3(/*0*/ x: Inv<in kotlin.Number>, /*1*/ list: kotlin.collections.List<Inv<kotlin.Int>>): kotlin.Unit
+public fun test_4(/*0*/ x: Inv2<in kotlin.Number, out kotlin.Number>, /*1*/ list: kotlin.collections.List<Inv2<kotlin.Any, kotlin.Int>>): kotlin.Unit
+@kotlin.Suppress(names = {"INVISIBLE_MEMBER", "INVISIBLE_REFERENCE"}) public fun </*0*/ @kotlin.internal.OnlyInputTypes T> kotlin.collections.Iterable<T>.contains1(/*0*/ element: T): kotlin.Boolean
+@kotlin.Suppress(names = {"INVISIBLE_MEMBER", "INVISIBLE_REFERENCE"}) public fun </*0*/ @kotlin.internal.OnlyInputTypes T> kotlin.collections.Iterable<T>.foo(/*0*/ element: T): T
 
-public final class Class</*0*/ T> {
-    public constructor Class</*0*/ T>()
+public final class Inv</*0*/ T> {
+    public constructor Inv</*0*/ T>()
     public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
     public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
     public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
 }
 
-public final class Foo</*0*/ T> {
-    public constructor Foo</*0*/ T>()
+public final class Inv2</*0*/ T, /*1*/ R> {
+    public constructor Inv2</*0*/ T, /*1*/ R>()
     public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
     public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
     public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
