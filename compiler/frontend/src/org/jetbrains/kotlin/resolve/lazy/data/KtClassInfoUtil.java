@@ -23,8 +23,14 @@ import org.jetbrains.kotlin.psi.KtObjectDeclaration;
 
 public class KtClassInfoUtil {
 
+    @Deprecated // Use createClassOrObjectInfo
     @NotNull
-    public static KtClassOrObjectInfo<? extends KtClassOrObject> createClassLikeInfo(@NotNull KtClassOrObject classOrObject) {
+    public static KtClassLikeInfo createClassLikeInfo(@NotNull KtClassOrObject classOrObject) {
+        return createClassOrObjectInfo(classOrObject);
+    }
+
+    @NotNull
+    public static KtClassOrObjectInfo<? extends KtClassOrObject> createClassOrObjectInfo(@NotNull KtClassOrObject classOrObject) {
         if (classOrObject instanceof KtClass) {
             return new KtClassInfo((KtClass) classOrObject);
         }
