@@ -8,7 +8,7 @@ package kotlin.time
 private val storageUnit = DurationUnit.MICROSECONDS
 
 @Suppress("NON_PUBLIC_PRIMARY_CONSTRUCTOR_OF_INLINE_CLASS")
-public inline class Duration internal constructor(internal val _value: Double) : Comparable<Duration> {
+inline class Duration internal constructor(internal val _value: Double) : Comparable<Duration> {
 // TODO: backend fails on init block, wait for KT-28055
 
 //    init {
@@ -157,7 +157,7 @@ public inline class Duration internal constructor(internal val _value: Double) :
                 append(days).append('D')
 
 
-            if (seconds != 0 || minutes != 0 || hours != 0 || days == 0) {
+            if (days == 0 || seconds != 0 || nanoseconds != 0 || minutes != 0 || hours != 0) {
                 append('T')
                 val hasHours = hours != 0 || days != 0
                 val hasSeconds = seconds != 0 || nanoseconds != 0
@@ -168,18 +168,19 @@ public inline class Duration internal constructor(internal val _value: Double) :
                 if (hasMinutes) {
                     append(minutes).append('M')
                 }
-                if (hasSeconds || (!hasHours && !hasMinutes))
+                if (hasSeconds || (!hasHours && !hasMinutes)) {
                     append(seconds)
-                if (nanoseconds != 0) {
-                    append('.')
-                    val nss = nanoseconds.toString().padStart(9, '0')
-                    when {
-                        nanoseconds % 1_000_000 == 0 -> append(nss, 0, 3)
-                        nanoseconds % 1_000 == 0 -> append(nss, 0, 6)
-                        else -> append(nss)
+                    if (nanoseconds != 0) {
+                        append('.')
+                        val nss = nanoseconds.toString().padStart(9, '0')
+                        when {
+                            nanoseconds % 1_000_000 == 0 -> append(nss, 0, 3)
+                            nanoseconds % 1_000 == 0 -> append(nss, 0, 6)
+                            else -> append(nss)
+                        }
                     }
+                    append('S')
                 }
-                append('S')
             }
         }
     }
