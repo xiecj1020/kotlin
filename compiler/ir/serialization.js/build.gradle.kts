@@ -127,7 +127,7 @@ val fullRuntimeSources by task<Copy> {
     }
 }
 
-val reducedRuntimeSources by task<Copy> {
+val reducedRuntimeSources by task<Sync> {
     dependsOn(fullRuntimeSources)
 
     from(fullRuntimeSources.outputs.files.singleFile) {
@@ -156,6 +156,7 @@ val reducedRuntimeSources by task<Copy> {
                 "libraries/stdlib/js/src/kotlin/char.kt",
                 "libraries/stdlib/js/src/kotlin/collections.kt",
                 "libraries/stdlib/js/src/kotlin/collections/**",
+                "libraries/stdlib/js/src/kotlin/time/**",
                 "libraries/stdlib/js/src/kotlin/console.kt",
                 "libraries/stdlib/js/src/kotlin/coreDeprecated.kt",
                 "libraries/stdlib/js/src/kotlin/date.kt",
@@ -175,6 +176,7 @@ val reducedRuntimeSources by task<Copy> {
                 "libraries/stdlib/src/kotlin/properties/Delegates.kt",
                 "libraries/stdlib/src/kotlin/random/URandom.kt",
                 "libraries/stdlib/src/kotlin/text/**",
+                "libraries/stdlib/src/kotlin/time/**",
                 "libraries/stdlib/src/kotlin/util/KotlinVersion.kt",
                 "libraries/stdlib/src/kotlin/util/Tuples.kt"
             )
