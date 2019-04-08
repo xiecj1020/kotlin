@@ -54,6 +54,7 @@ class DurationTest {
                 val value2 = convertDurationUnit(value, unit, unit2)
                 val d2 = Duration(value2, unit2)
                 assertEquals(d1, d2, "$value $unit in $unit2")
+                assertEquals(d1.hashCode(), d2.hashCode())
 
                 val d3 = Duration(value2 * 2, unit2)
                 assertNotEquals(d1, d3, "$value $unit in $unit2")
@@ -212,6 +213,7 @@ class DurationTest {
     fun subtraction() {
         assertEquals(10.hours, 0.5.days - 120.minutes)
         assertEquals(850.milliseconds, 1.seconds - 150.milliseconds)
+        // TODO decide on INFINITE - INFINITE
     }
 
     @Test
