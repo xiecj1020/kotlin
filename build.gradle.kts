@@ -10,7 +10,7 @@ import org.gradle.kotlin.dsl.*
 buildscript {
     extra["defaultSnapshotVersion"] = "1.3-SNAPSHOT"
 
-    kotlinBootstrapFrom(BootstrapOption.TeamCity("1.3.40-dev-431", onlySuccessBootstrap = false))
+    kotlinBootstrapFrom(BootstrapOption.TeamCity("1.3.40-dev-1654", onlySuccessBootstrap = false))
 
     repositories.withRedirector(project) {
         bootstrapKotlinRepo?.let(::maven)
@@ -113,7 +113,7 @@ extra["JDK_9"] = jdkPath("9")
 extra["JDK_10"] = jdkPath("10")
 extra["JDK_11"] = jdkPath("11")
 
-gradle.taskGraph.beforeTask() {
+gradle.taskGraph.beforeTask {
     checkJDK()
 }
 
