@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.cli.common.output.writeAllTo
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
 import org.jetbrains.kotlin.config.*
+import org.jetbrains.kotlin.daemon.common.PackageMetadata
 import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.incremental.js.IncrementalDataProviderImpl
 import org.jetbrains.kotlin.incremental.js.IncrementalResultsConsumerImpl
@@ -48,6 +49,7 @@ import org.jetbrains.kotlin.js.test.interop.ScriptEngineV8Lazy
 import org.jetbrains.kotlin.js.test.utils.*
 import org.jetbrains.kotlin.js.util.TextOutputImpl
 import org.jetbrains.kotlin.metadata.DebugProtoBuf
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtPsiFactory
@@ -391,6 +393,7 @@ abstract class BasicBoxTest(
                 val sourceFile = File(testFile.fileName)
                 incrementalData.translatedFiles.remove(sourceFile)
                 sourceToTranslationUnit[sourceFile] = TranslationUnit.SourceFile(createPsiFile(testFile.fileName))
+                incrementalData.packageMetadata.remove(testFile.packageName)
             }
         }
         for ((sourceFile, data) in incrementalData.translatedFiles) {
@@ -457,7 +460,11 @@ abstract class BasicBoxTest(
 
     private fun removeRecompiledSuffix(text: String): String = text.replace("-recompiled.js", ".js")
 
-    class IncrementalData(var header: ByteArray? = null, val translatedFiles: MutableMap<File, TranslationResultValue> = hashMapOf())
+    class IncrementalData(
+        var header: ByteArray? = null,
+        val translatedFiles: MutableMap<File, TranslationResultValue> = hashMapOf(),
+        val packageMetadata: MutableMap<FqName, ByteArray> = hashMapOf()
+    )
 
     protected open fun translateFiles(
         units: List<TranslationUnit>,
@@ -500,6 +507,8 @@ abstract class BasicBoxTest(
             for ((srcFile, data) in incrementalService.packageParts) {
                 incrementalData.translatedFiles[srcFile] = data
             }
+
+            incrementalData.packageMetadata += incrementalService.packageMetadata
 
             incrementalData.header = incrementalService.headerMetadata
         }
@@ -636,7 +645,7 @@ abstract class BasicBoxTest(
             if (header != null) {
                 configuration.put(
                     JSConfigurationKeys.INCREMENTAL_DATA_PROVIDER,
-                    IncrementalDataProviderImpl(header, incrementalData.translatedFiles, JsMetadataVersion.INSTANCE.toArray())
+                    IncrementalDataProviderImpl(header, incrementalData.translatedFiles, JsMetadataVersion.INSTANCE.toArray(), incrementalData.packageMetadata)
                 )
             }
 
@@ -764,7 +773,12 @@ abstract class BasicBoxTest(
                 currentModule.sourceMapSourceEmbedding = SourceMapSourceEmbedding.valueOf(match.groupValues[1])
             }
 
-            return TestFile(temporaryFile.absolutePath, currentModule, recompile = RECOMPILE_PATTERN.matcher(text).find())
+            return TestFile(
+                temporaryFile.absolutePath,
+                currentModule,
+                recompile = RECOMPILE_PATTERN.matcher(text).find(),
+                packageName = ktFile.packageFqName
+            )
         }
 
         override fun createModule(name: String, dependencies: List<String>, friends: List<String>) =
@@ -775,7 +789,7 @@ abstract class BasicBoxTest(
         }
     }
 
-    private class TestFile(val fileName: String, val module: TestModule, val recompile: Boolean) {
+    private class TestFile(val fileName: String, val module: TestModule, val recompile: Boolean, val packageName: FqName) {
         init {
             module.files += this
         }
