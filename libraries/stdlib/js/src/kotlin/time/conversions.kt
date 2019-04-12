@@ -5,6 +5,11 @@
 
 package kotlin.time
 
-//public actual fun convertDurationUnit(value: Double, sourceUnit: DurationUnit, targetUnit: DurationUnit): Double {
-//    TODO("not implemented")
-//}
+actual fun convertDurationUnit(value: Double, sourceUnit: DurationUnit, targetUnit: DurationUnit): Double {
+    val sourceCompareTarget = sourceUnit.scale.compareTo(targetUnit.scale)
+    return when {
+        sourceCompareTarget > 0 -> value * (sourceUnit.scale / targetUnit.scale)
+        sourceCompareTarget < 0 -> value / (targetUnit.scale / sourceUnit.scale)
+        else -> value
+    }
+}

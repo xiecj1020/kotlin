@@ -6,33 +6,35 @@
 package kotlin.time
 
 
-//public actual enum class DurationUnit {
-//    /**
-//     * Time unit representing one nanosecond, which is 1/1000 of a microsecond.
-//     */
-//    NANOSECONDS,
-//    /**
-//     * Time unit representing one microsecond, which is 1/1000 of a millisecond.
-//     */
-//    MICROSECONDS,
-//    /**
-//     * Time unit representing one millisecond, which is 1/1000 of a second.
-//     */
-//    MILLISECONDS,
-//    /**
-//     * Time unit representing one second.
-//     */
-//    SECONDS,
-//    /**
-//     * Time unit representing one minute.
-//     */
-//    MINUTES,
-//    /**
-//     * Time unit representing one hour.
-//     */
-//    HOURS,
-//    /**
-//     * Time unit representing one day, which always equals 24 hours.
-//     */
-//    DAYS;
-//}
+actual enum class DurationUnit(internal val scale: Double) {
+    /**
+     * Time unit representing one nanosecond, which is 1/1000 of a microsecond.
+     */
+    NANOSECONDS(1e0),
+    /**
+     * Time unit representing one microsecond, which is 1/1000 of a millisecond.
+     */
+    MICROSECONDS(1e3),
+    /**
+     * Time unit representing one millisecond, which is 1/1000 of a second.
+     */
+    MILLISECONDS(1e6),
+    /**
+     * Time unit representing one second.
+     */
+    SECONDS(1e9),
+    /**
+     * Time unit representing one minute.
+     */
+    MINUTES(60e9),
+    /**
+     * Time unit representing one hour.
+     */
+    HOURS(3600e9),
+    /**
+     * Time unit representing one day, which always equals 24 hours.
+     */
+    DAYS(86400e9);
+}
+
+
