@@ -97,6 +97,8 @@ dependencies {
         }
     }
     fatJarContentsStripServices(intellijDep("jps-standalone")) { includeJars("jps-model") }
+
+    runtime(project(":kotlin-scripting-compiler"))
 }
 
 publish()
