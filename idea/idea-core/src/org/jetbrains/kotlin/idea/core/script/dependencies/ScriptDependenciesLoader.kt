@@ -45,7 +45,10 @@ abstract class ScriptDependenciesLoader(protected val project: Project) {
     private val reporter: ScriptReportSink = ServiceManager.getService(project, ScriptReportSink::class.java)
 
     protected fun processResult(result: DependenciesResolver.ResolveResult, file: VirtualFile, scriptDef: KotlinScriptDefinition) {
+        ScriptDependenciesUpdater.LOG.info("fileName = ${file.path}, dependencies from loader = $result")
+
         if (cache[file] == null) {
+            ScriptDependenciesUpdater.LOG.info("fileName = ${file.path}, dependencies in cache are null")
             saveDependencies(result, file, scriptDef)
             attachReportsIfChanged(result, file, scriptDef)
             return
@@ -53,8 +56,11 @@ abstract class ScriptDependenciesLoader(protected val project: Project) {
 
         val newDependencies = result.dependencies?.adjustByDefinition(scriptDef)
         if (cache[file] != newDependencies) {
+            ScriptDependenciesUpdater.LOG.info("fileName = ${file.path}, dependencies are different")
             if (shouldShowNotification() && !ApplicationManager.getApplication().isUnitTestMode) {
+                ScriptDependenciesUpdater.LOG.info("fileName = ${file.path}, show notification")
                 file.addScriptDependenciesNotificationPanel(result, project) {
+                    ScriptDependenciesUpdater.LOG.info("fileName = ${file.path}, notification is pressed, dependencies = $result")
                     saveDependencies(it, file, scriptDef)
                     attachReportsIfChanged(it, file, scriptDef)
                     submitMakeRootsChange()
@@ -64,6 +70,7 @@ abstract class ScriptDependenciesLoader(protected val project: Project) {
                 attachReportsIfChanged(result, file, scriptDef)
             }
         } else {
+            ScriptDependenciesUpdater.LOG.info("fileName = ${file.path}, dependencies are equal")
             attachReportsIfChanged(result, file, scriptDef)
 
             if (shouldShowNotification()) {
@@ -84,8 +91,11 @@ abstract class ScriptDependenciesLoader(protected val project: Project) {
         }
 
         val dependencies = result.dependencies?.adjustByDefinition(scriptDef) ?: return
+        ScriptDependenciesUpdater.LOG.info("fileName = ${file.path}, new dependencies = $dependencies")
+
         val rootsChanged = cache.hasNotCachedRoots(dependencies)
         if (cache.save(file, dependencies)) {
+            ScriptDependenciesUpdater.LOG.info("fileName = ${file.path}, dependencies are saved to file attributes")
             file.scriptDependencies = dependencies
         }
 
@@ -102,6 +112,8 @@ abstract class ScriptDependenciesLoader(protected val project: Project) {
         val doNotifyRootsChanged = Runnable {
             runWriteAction {
                 if (project.isDisposed) return@runWriteAction
+
+                ScriptDependenciesUpdater.LOG.info("root change event for ${this.javaClass}")
 
                 shouldNotifyRootsChanged = false
                 ProjectRootManagerEx.getInstanceEx(project)?.makeRootsChange(EmptyRunnable.getInstance(), false, true)

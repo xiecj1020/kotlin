@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.idea.core.script
 import com.intellij.openapi.application.Application
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
@@ -65,6 +66,7 @@ class ScriptDependenciesUpdater(
         cache[file]?.let { return it }
 
         val scriptDef = findScriptDefinition(file, project) ?: return ScriptDependencies.Empty
+        LOG.info("fileName = ${file.path}, definition = $scriptDef")
 
         fileAttributeLoader.updateDependencies(file, scriptDef)
 
@@ -192,6 +194,8 @@ class ScriptDependenciesUpdater(
             val scriptDefinition = findScriptDefinition(file.virtualFile, file.project) ?: return false
             return getInstance(file.project).isAsyncDependencyResolver(scriptDefinition)
         }
+
+        val LOG = Logger.getInstance("#org.jetbrains.kotlin.idea.script")
     }
 }
 

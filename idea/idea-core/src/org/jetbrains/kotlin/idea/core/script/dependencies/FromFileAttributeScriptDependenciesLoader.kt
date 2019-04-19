@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.idea.core.script.dependencies
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import org.jetbrains.kotlin.idea.core.script.ScriptDependenciesUpdater
 import org.jetbrains.kotlin.idea.core.script.scriptDependencies
 import org.jetbrains.kotlin.script.KotlinScriptDefinition
 import kotlin.script.experimental.dependencies.ScriptDependencies
@@ -15,6 +16,7 @@ class FromFileAttributeScriptDependenciesLoader(project: Project) : ScriptDepend
 
     override fun loadDependencies(file: VirtualFile, scriptDef: KotlinScriptDefinition) {
         val deserializedDependencies = file.scriptDependencies ?: return
+        ScriptDependenciesUpdater.LOG.info("fileName = ${file.path}, dependencies from fileAttributes = $deserializedDependencies")
         saveToCache(deserializedDependencies, file)
     }
 

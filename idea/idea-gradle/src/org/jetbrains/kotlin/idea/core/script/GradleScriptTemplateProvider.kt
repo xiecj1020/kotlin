@@ -215,10 +215,12 @@ class GradleScriptDefinitionsContributor(private val project: Project) : ScriptD
             dependencySelector.matches(it.name)
         }.takeIf { it.isNotEmpty() }?.asList() ?: error("Missing jars in gradle directory")
 
+        val environment = createEnvironment(gradleExeSettings)
+        ScriptDependenciesUpdater.LOG.info("enviroment for Gradle Script Definitions = $environment")
         return loadDefinitionsFromTemplates(
             listOf(templateClass),
             templateClasspath,
-            createEnvironment(gradleExeSettings),
+            environment,
             additionalResolverClasspath(gradleLibDir)
         ).map {
             // Expand scope for old gradle script definition
@@ -236,6 +238,7 @@ class GradleScriptDefinitionsContributor(private val project: Project) : ScriptD
     }
 
     private fun reload() {
+        ScriptDependenciesUpdater.LOG.info("GradleScriptTempateProvider.reload")
         ScriptDefinitionsManager.getInstance(project).reloadDefinitionsBy(this)
     }
 

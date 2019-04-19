@@ -14,6 +14,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.kotlin.idea.core.script.ScriptDependenciesUpdater
 import org.jetbrains.kotlin.idea.core.script.settings.KotlinScriptingSettings
 import org.jetbrains.kotlin.script.KotlinScriptDefinition
 import org.jetbrains.kotlin.script.LegacyResolverWrapper
@@ -34,6 +35,7 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
     override fun loadDependencies(file: VirtualFile, scriptDef: KotlinScriptDefinition) {
         lock.write {
             if (backgroundTasksQueue == null) {
+                ScriptDependenciesUpdater.LOG.info("fileName = ${file.path}, background thread started")
                 backgroundTasksQueue = LoaderBackgroundTask()
                 backgroundTasksQueue!!.addTask(file)
                 backgroundTasksQueue!!.start()
@@ -49,6 +51,8 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
         lock.write {
             if (notifyRootChange) return false
 
+            ScriptDependenciesUpdater.LOG.info("should notify roots changed")
+
             if (backgroundTasksQueue == null) {
                 submitMakeRootsChange()
                 return true
@@ -56,6 +60,7 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
 
             notifyRootChange = true
 
+            ScriptDependenciesUpdater.LOG.info("notifyRootsChanged event added at onFinishTask")
             backgroundTasksQueue!!.addOnFinishTask {
                 lock.write {
                     notifyRootChange = false
@@ -68,6 +73,7 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
     }
 
     private fun runDependenciesUpdate(file: VirtualFile) {
+        ScriptDependenciesUpdater.LOG.info("fileName = ${file.path}, start loading dependencies")
         val scriptDef = runReadAction { findScriptDefinition(file, project) } ?: return
         // runBlocking is using there to avoid loading dependencies asynchronously
         // because it leads to starting more than one gradle daemon in case of resolving dependencies in build.gradle.kts
@@ -79,6 +85,7 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
                 t.asResolveFailure(scriptDef)
             }
         }
+        ScriptDependenciesUpdater.LOG.info("fileName = ${file.path}, finish loading dependencies")
         processResult(result, file, scriptDef)
     }
 
@@ -116,6 +123,7 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
         }
 
         private fun startSilently() {
+            ScriptDependenciesUpdater.LOG.info("started silently")
             startedSilently = true
             BackgroundTaskUtil.executeOnPooledThread(project, Runnable {
                 loadDependencies(EmptyProgressIndicator())
@@ -123,6 +131,7 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
         }
 
         private fun startWithProgress() {
+            ScriptDependenciesUpdater.LOG.info("started with progress")
             startedSilently = false
             object : Task.Backgroundable(project, "Kotlin: Loading script dependencies...", true) {
                 override fun run(indicator: ProgressIndicator) {
@@ -155,6 +164,7 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
                         onFinish?.invoke()
                         backgroundTasksQueue = null
                     }
+                    ScriptDependenciesUpdater.LOG.info("background thread stopped")
                     return
                 }
                 runDependenciesUpdate(sequenceOfFiles.poll())

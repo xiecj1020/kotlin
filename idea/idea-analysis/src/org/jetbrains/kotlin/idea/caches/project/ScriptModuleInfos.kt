@@ -16,6 +16,7 @@ import com.intellij.psi.search.NonClasspathDirectoriesScope
 import com.intellij.util.containers.SLRUCache
 import org.jetbrains.kotlin.idea.core.script.ScriptDependenciesCache.Companion.MAX_SCRIPTS_CACHED
 import org.jetbrains.kotlin.idea.core.script.ScriptDependenciesManager
+import org.jetbrains.kotlin.idea.core.script.ScriptDependenciesUpdater
 import org.jetbrains.kotlin.idea.core.script.dependencies.ScriptRelatedModulesProvider
 import org.jetbrains.kotlin.idea.stubindex.KotlinSourceFilterScope
 import org.jetbrains.kotlin.name.Name
@@ -54,7 +55,10 @@ data class ScriptModuleInfo(
             val dependenciesInfo = ScriptDependenciesInfo.ForFile(project, scriptFile, scriptDefinition)
             add(dependenciesInfo)
 
-            dependenciesInfo.sdk?.let { add(SdkInfo(project, it)) }
+            dependenciesInfo.sdk?.let {
+                ScriptDependenciesUpdater.LOG.info("fileName = ${scriptFile.path}, sdk in module info = $it")
+                add(SdkInfo(project, it))
+            }
         }
     }
 }
@@ -68,9 +72,13 @@ fun findJdk(dependencies: ScriptDependencies?, project: Project): Sdk? {
         null
     }
 
-    return allJdks.find { javaHome != null && File(it.homePath).canonicalPath == javaHome }
-            ?: ProjectRootManager.getInstance(project).projectSdk
-            ?: allJdks.firstOrNull()
+    val javaHomeSdk = allJdks.find { javaHome != null && File(it.homePath).canonicalPath == javaHome }
+    val projectSdk = ProjectRootManager.getInstance(project).projectSdk
+    val firstOrNull = allJdks.firstOrNull()
+
+    ScriptDependenciesUpdater.LOG.info("javaHome = $javaHome; sdk from javaHome = $javaHomeSdk; projectSdk = $projectSdk; first sdk in list = $firstOrNull")
+
+    return javaHomeSdk ?: projectSdk ?: firstOrNull
 }
 
 sealed class ScriptDependenciesInfo(val project: Project) : IdeaModuleInfo, BinaryModuleInfo {
