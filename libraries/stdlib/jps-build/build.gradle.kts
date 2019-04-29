@@ -15,11 +15,13 @@ dependencies {
 
     distLib("org.jetbrains.kotlin:kotlin-stdlib:$bootstrapKotlinVersion")
     distLib("org.jetbrains.kotlin:kotlin-stdlib-js:$bootstrapKotlinVersion")
+    distLib("org.jetbrains.kotlin:kotlin-stdlib-js-ir:$bootstrapKotlinVersion")
     distLib("org.jetbrains.kotlin:kotlin-stdlib-jdk7:$bootstrapKotlinVersion")
     distLib("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$bootstrapKotlinVersion")
 
     distLib("org.jetbrains.kotlin:kotlin-stdlib:$bootstrapKotlinVersion:sources")
     distLib("org.jetbrains.kotlin:kotlin-stdlib-js:$bootstrapKotlinVersion:sources")
+    distLib("org.jetbrains.kotlin:kotlin-stdlib-js-ir:$bootstrapKotlinVersion:sources")
     distLib("org.jetbrains.kotlin:kotlin-stdlib-jdk7:$bootstrapKotlinVersion:sources")
     distLib("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$bootstrapKotlinVersion:sources")
 
