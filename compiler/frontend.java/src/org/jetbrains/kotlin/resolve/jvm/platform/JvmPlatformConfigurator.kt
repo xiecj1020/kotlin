@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.resolve.jvm.multiplatform.JavaActualAnnotationArgume
 import org.jetbrains.kotlin.synthetic.JavaSyntheticScopes
 import org.jetbrains.kotlin.types.DynamicTypesSettings
 import org.jetbrains.kotlin.types.expressions.FunctionWithBigAritySupport
+import org.jetbrains.kotlin.types.expressions.GenericArrayClassLiteralSupport
 
 object JvmPlatformConfigurator : PlatformConfiguratorBase(
     DynamicTypesSettings(),
@@ -100,5 +101,6 @@ object JvmPlatformConfigurator : PlatformConfiguratorBase(
         container.useImpl<JvmDefaultSuperCallChecker>()
         container.useImpl<JvmSamConversionTransformer>()
         container.useInstance(FunctionWithBigAritySupport.LANGUAGE_VERSION_DEPENDENT)
+        container.useInstance(GenericArrayClassLiteralSupport.ENABLED)
     }
 }

@@ -86,7 +86,8 @@ class DoubleColonExpressionResolver(
     val languageVersionSettings: LanguageVersionSettings,
     val additionalCheckers: Iterable<ClassLiteralChecker>,
     val dataFlowValueFactory: DataFlowValueFactory,
-    val bigAritySupport: FunctionWithBigAritySupport
+    val bigAritySupport: FunctionWithBigAritySupport,
+    val genericArrayClassLiteralSupport: GenericArrayClassLiteralSupport
 ) {
     private lateinit var expressionTypingServices: ExpressionTypingServices
 
@@ -139,7 +140,9 @@ class DoubleColonExpressionResolver(
         result as DoubleColonLHS.Type
         val descriptor = type.constructor.declarationDescriptor
         if (result.possiblyBareType.isBare) {
-            if (descriptor is ClassDescriptor && KotlinBuiltIns.isNonPrimitiveArray(descriptor)) {
+            if (descriptor is ClassDescriptor && KotlinBuiltIns.isNonPrimitiveArray(descriptor) &&
+                !languageVersionSettings.supportsFeature(LanguageFeature.BareArrayClassLiteral)
+            ) {
                 c.trace.report(ARRAY_CLASS_LITERAL_REQUIRES_ARGUMENT.on(expression))
             }
         }
@@ -484,9 +487,13 @@ class DoubleColonExpressionResolver(
 
         when (descriptor) {
             is ClassDescriptor -> {
-                if (KotlinBuiltIns.isNonPrimitiveArray(descriptor)) {
-                    return type.arguments.none { typeArgument ->
-                        typeArgument.isStarProjection || !isAllowedInClassLiteral(typeArgument.type)
+                if (genericArrayClassLiteralSupport.isEnabled ||
+                    !languageVersionSettings.supportsFeature(LanguageFeature.BareArrayClassLiteral)
+                ) {
+                    if (KotlinBuiltIns.isNonPrimitiveArray(descriptor)) {
+                        return type.arguments.none { typeArgument ->
+                            typeArgument.isStarProjection || !isAllowedInClassLiteral(typeArgument.type)
+                        }
                     }
                 }
 
@@ -824,10 +831,22 @@ class DoubleColonExpressionResolver(
 // LANGUAGE_VERSION_DEPENDENT should be used which makes the code check if the corresponding language feature is enabled.
 @DefaultImplementation(FunctionWithBigAritySupport::class)
 class FunctionWithBigAritySupport private constructor(val shouldCheckLanguageVersionSettings: Boolean) {
+    @Suppress("unused")
     constructor() : this(false)
 
     companion object {
         @JvmField
         val LANGUAGE_VERSION_DEPENDENT = FunctionWithBigAritySupport(true)
+    }
+}
+
+@DefaultImplementation(GenericArrayClassLiteralSupport::class)
+class GenericArrayClassLiteralSupport private constructor(val isEnabled: Boolean) {
+    @Suppress("unused")
+    constructor() : this(false)
+
+    companion object {
+        @JvmField
+        val ENABLED = GenericArrayClassLiteralSupport(true)
     }
 }
