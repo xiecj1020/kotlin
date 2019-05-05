@@ -92,3 +92,111 @@ public actual inline fun Float.toRawBits(): Int = java.lang.Float.floatToRawIntB
 @SinceKotlin("1.2")
 @kotlin.internal.InlineOnly
 public actual inline fun Float.Companion.fromBits(bits: Int): Float = java.lang.Float.intBitsToFloat(bits)
+
+
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Int.countOneBits(): Int = Integer.bitCount(this)
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Int.countLeadingZeroBits(): Int = Integer.numberOfLeadingZeros(this)
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Int.countTrailingZeroBits(): Int = Integer.numberOfTrailingZeros(this)
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Int.takeHighestOneBit(): Int = Integer.highestOneBit(this)
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Int.takeLowestOneBit(): Int = Integer.lowestOneBit(this)
+
+
+
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Long.countOneBits(): Int = java.lang.Long.bitCount(this)
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Long.countLeadingZeroBits(): Int = java.lang.Long.numberOfLeadingZeros(this)
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Long.countTrailingZeroBits(): Int = java.lang.Long.numberOfTrailingZeros(this)
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Long.takeHighestOneBit(): Long = java.lang.Long.highestOneBit(this)
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Long.takeLowestOneBit(): Long = java.lang.Long.lowestOneBit(this)
+
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Byte.countOneBits(): Int = (toInt() and 0xFF).countOneBits()
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Byte.countLeadingZeroBits(): Int = (toInt() and 0xFF).countLeadingZeroBits() - (Int.SIZE_BITS - Byte.SIZE_BITS)
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Byte.countTrailingZeroBits(): Int = (toInt() or 0x100).countTrailingZeroBits()
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Byte.takeHighestOneBit(): Byte = (toInt() and 0xFF).takeHighestOneBit().toByte()
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Byte.takeLowestOneBit(): Byte = toInt().takeLowestOneBit().toByte()
+
+
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Short.countOneBits(): Int = (toInt() and 0xFFFF).countOneBits()
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Short.countLeadingZeroBits(): Int = (toInt() and 0xFFFF).countLeadingZeroBits() - (Int.SIZE_BITS - Short.SIZE_BITS)
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Short.countTrailingZeroBits(): Int = (toInt() or 0x10000).countTrailingZeroBits()
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Short.takeHighestOneBit(): Short = (toInt() and 0xFFFF).takeHighestOneBit().toShort()
+
+@SinceKotlin("1.3")
+@ExperimentalStdlibApi
+@kotlin.internal.InlineOnly
+public inline fun Short.takeLowestOneBit(): Short = toInt().takeLowestOneBit().toShort()
