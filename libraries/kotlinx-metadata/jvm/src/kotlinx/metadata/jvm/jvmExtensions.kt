@@ -156,17 +156,21 @@ open class JvmPropertyExtensionVisitor @JvmOverloads constructor(
     /**
      * Visits JVM signatures of field and accessors generated for the property.
      *
+     * @param jvmFlags JVM-specific flags of the property, consisting of [JvmFlag.Property] flags
      * @param fieldSignature the signature of the field, or `null` if this property has no field.
      *                       Example: `JvmFieldSignature("X", "Ljava/lang/Object;")`
-     *
      * @param getterSignature the signature of the property getter, or `null` if this property has no getter or its signature is unknown.
      *                        Example: `JvmMethodSignature("getX()", "Ljava/lang/Object;")`
-     *
      * @param setterSignature the signature of the property setter, or `null` if this property has no setter or its signature is unknown.
      *                        Example: `JvmMethodSignature("setX", "(Ljava/lang/Object;)V")`
      */
-    open fun visit(fieldSignature: JvmFieldSignature?, getterSignature: JvmMethodSignature?, setterSignature: JvmMethodSignature?) {
-        delegate?.visit(fieldSignature, getterSignature, setterSignature)
+    open fun visit(
+        jvmFlags: Flags,
+        fieldSignature: JvmFieldSignature?,
+        getterSignature: JvmMethodSignature?,
+        setterSignature: JvmMethodSignature?
+    ) {
+        delegate?.visit(jvmFlags, fieldSignature, getterSignature, setterSignature)
     }
 
     /**
