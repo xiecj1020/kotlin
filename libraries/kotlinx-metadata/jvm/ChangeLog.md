@@ -6,6 +6,8 @@
 - [`KT-31338`](https://youtrack.jetbrains.com/issue/KT-31338) Retain "is moved from interface companion" property flag in kotlinx-metadata-jvm
 - Correctly write "null" constant value in effect expression of a contract
 - Rename `desc` parameters to `signature` in JvmFunctionExtensionVisitor, JvmPropertyExtensionVisitor, JvmConstructorExtensionVisitor
+- Do not expose KmExtensionType internals
+- Add KmExtensionVisitor.type to get dynamic type of an extension visitor
 
 ## 0.0.5
 
