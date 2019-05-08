@@ -72,8 +72,7 @@ class KaptImportingTest : MultiplePluginVersionGradleImportingTestCase() {
                 sourceFolder("src/test/java", JavaSourceRootType.TEST_SOURCE)
                 sourceFolder("src/test/kotlin", JavaSourceRootType.TEST_SOURCE)
                 sourceFolder("src/test/resources", JavaResourceRootType.TEST_RESOURCE)
-                libraryDependency("Gradle: kaptGeneratedClasses", DependencyScope.COMPILE) // to production classes
-                libraryDependency("Gradle: kaptGeneratedClasses", DependencyScope.COMPILE) // to test classes
+                libraryDependency("Gradle: kaptGeneratedClasses", DependencyScope.COMPILE)
             }
 
         }

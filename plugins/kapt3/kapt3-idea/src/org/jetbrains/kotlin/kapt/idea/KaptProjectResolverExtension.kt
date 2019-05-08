@@ -79,7 +79,7 @@ class KaptProjectResolverExtension : AbstractProjectResolverExtension() {
 
         if (kaptModel != null && kaptModel.isEnabled) {
             for (sourceSet in kaptModel.sourceSets) {
-                val parentDataNode = ideModule.findParentDataNode(sourceSet.sourceSetName) ?: continue
+                val parentDataNode = ideModule.findParentForSourceSetDataNode(sourceSet.sourceSetName) ?: continue
 
                 fun addSourceSet(path: String, type: ExternalSystemSourceType) {
                     val contentRootData = ContentRootData(GRADLE_SYSTEM_ID, path)
@@ -111,13 +111,13 @@ class KaptProjectResolverExtension : AbstractProjectResolverExtension() {
         super.populateModuleExtraModels(gradleModule, ideModule)
     }
 
-    private fun DataNode<ModuleData>.findParentDataNode(sourceSetName: String): DataNode<ModuleData>? {
+    private fun DataNode<ModuleData>.findParentForSourceSetDataNode(sourceSetName: String): DataNode<ModuleData>? {
         val moduleName = data.id
         for (child in children) {
             val gradleSourceSetData = child.data as? GradleSourceSetData ?: continue
             if (gradleSourceSetData.id == "$moduleName:$sourceSetName") {
                 @Suppress("UNCHECKED_CAST")
-                return child as DataNode<ModuleData>?
+                return child as? DataNode<ModuleData>
             }
         }
 
