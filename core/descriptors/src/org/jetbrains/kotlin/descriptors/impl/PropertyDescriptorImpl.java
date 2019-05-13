@@ -155,6 +155,13 @@ public class PropertyDescriptorImpl extends VariableDescriptorWithInitializerImp
                                           isExpect, isActual, isExternal, isDelegated, substitutingScopeProvider);
     }
 
+    @NotNull
+    public PropertyDescriptorImpl getCopy() {
+        return new PropertyDescriptorImpl(getContainingDeclaration(), original, getAnnotations(),
+                                          modality, visibility, isVar(), getName(), kind, getSource(), lateInit, isConst,
+                                          isExpect, isActual, isExternal, isDelegated, substitutingScopeProvider);
+    }
+
     public void setType(
             @NotNull KotlinType outType,
             @ReadOnly @NotNull List<? extends TypeParameterDescriptor> typeParameters,
@@ -518,7 +525,7 @@ public class PropertyDescriptorImpl extends VariableDescriptorWithInitializerImp
         return prev;
     }
 
-    private static FunctionDescriptor getSubstitutedInitialSignatureDescriptor(
+    public static FunctionDescriptor getSubstitutedInitialSignatureDescriptor(
             @NotNull TypeSubstitutor substitutor,
             @NotNull PropertyAccessorDescriptor accessorDescriptor
     ) {
@@ -611,5 +618,10 @@ public class PropertyDescriptorImpl extends VariableDescriptorWithInitializerImp
     @Override
     public <V> V getUserData(UserDataKey<V> key) {
         return null;
+    }
+
+    @NotNull
+    public SubstitutingScopeProvider getSubstitutingScopeProvider() {
+        return substitutingScopeProvider;
     }
 }

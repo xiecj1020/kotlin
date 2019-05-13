@@ -8,6 +8,8 @@ package org.jetbrains.kotlin.resolve.calls.tower
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
+import org.jetbrains.kotlin.descriptors.impl.PropertyDescriptorImpl
+import org.jetbrains.kotlin.descriptors.impl.PropertySetterDescriptorImpl
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.*
@@ -38,9 +40,9 @@ import org.jetbrains.kotlin.resolve.calls.tasks.ExplicitReceiverKind
 import org.jetbrains.kotlin.resolve.calls.tasks.TracingStrategy
 import org.jetbrains.kotlin.resolve.constants.CompileTimeConstant
 import org.jetbrains.kotlin.resolve.constants.IntegerLiteralTypeConstructor
-import org.jetbrains.kotlin.resolve.constants.IntegerValueTypeConstant
 import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluator
 import org.jetbrains.kotlin.resolve.deprecation.DeprecationResolver
+import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.scopes.receivers.CastImplicitClassReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitClassReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
@@ -698,9 +700,19 @@ class NewResolvedCallImpl<D : CallableDescriptor>(
                         (candidateDescriptor is PropertyDescriptor && (candidateDescriptor.typeParameters.isNotEmpty() || containsCapturedTypes || containsIntegerLiteralTypes)) ->
                     // this code is very suspicious. Now it is very useful for BE, because they cannot do nothing with captured types,
                     // but it seems like temporary solution.
-                    candidateDescriptor.substitute(resolvedCallAtom.substitutor).substituteAndApproximateCapturedTypes(
+                {
+                    val substituted = candidateDescriptor.substitute(resolvedCallAtom.substitutor)
+
+                    substituteProjectedOutPropertyDescriptor(substitutor ?: FreshVariableNewTypeSubstitutor.Empty, substituted)?.let {
+                        return@run it
+                    }
+
+                    val result = substituted.substituteAndApproximateCapturedTypes(
                         substitutor ?: FreshVariableNewTypeSubstitutor.Empty
                     )
+
+                    result
+                }
                 else ->
                     candidateDescriptor
             }
@@ -714,6 +726,56 @@ class NewResolvedCallImpl<D : CallableDescriptor>(
         }
 
         calculateExpectedTypeForSamConvertedArgumentMap(substitutor)
+    }
+
+    private fun substituteProjectedOutPropertyDescriptor(substitutor: NewTypeSubstitutor, descriptor: CallableDescriptor): CallableDescriptor? {
+        if (descriptor !is PropertyDescriptorImpl) return null
+
+        var type: UnwrappedType? = null
+        descriptor.type.contains {
+            if (it is NewCapturedType) {
+                type = it
+                true
+            } else {
+                false
+            }
+        }
+        val projection = type.safeAs<NewCapturedType>()?.constructor?.projection ?: return null
+        if (projection.projectionKind != Variance.OUT_VARIANCE || !projection.isStarProjection) return null
+
+        return (descriptor.substituteAndApproximateCapturedTypes(substitutor) as PropertyDescriptorImpl).run {
+            val result = getCopy()
+            result.setType(getType(), typeParameters, dispatchReceiverParameter, extensionReceiverParameter)
+            val newSetter = setter?.let { setter ->
+                with(setter) {
+                    val newSetter = PropertySetterDescriptorImpl(
+                        this@run,
+                        annotations,
+                        modality,
+                        visibility,
+                        isDefault(),
+                        isExternal(),
+                        isInline(),
+                        kind,
+                        original,
+                        SourceElement.NO_SOURCE
+                    )
+                    newSetter.initialSignatureDescriptor = initialSignatureDescriptor
+                    newSetter
+                }.apply {
+                    val valueParameter =
+                        PropertySetterDescriptorImpl.createSetterParameter(
+                            setter,
+                            builtIns.getNothingType(),
+                            setter.getValueParameters().get(0).annotations
+                        )
+                    initialize(valueParameter)
+                }
+            }
+            result.isSetterProjectedOut = true
+            result.initialize(getter, newSetter, backingField, delegateField)
+            result
+        }
     }
 
     fun getExpectedTypeForSamConvertedArgument(valueArgument: ValueArgument): UnwrappedType? =

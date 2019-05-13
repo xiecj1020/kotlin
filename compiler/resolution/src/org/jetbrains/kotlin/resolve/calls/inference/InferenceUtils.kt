@@ -70,14 +70,16 @@ fun CallableDescriptor.substitute(substitutor: NewTypeSubstitutor): CallableDesc
     return substitute(TypeSubstitutor.create(wrappedSubstitution))
 }
 
-fun CallableDescriptor.substituteAndApproximateCapturedTypes(substitutor: NewTypeSubstitutor): CallableDescriptor {
+fun CallableDescriptor.substituteAndApproximateCapturedTypes(substitutor: NewTypeSubstitutor, toSuperType: Boolean = true): CallableDescriptor {
     val wrappedSubstitution = object : TypeSubstitution() {
         override fun get(key: KotlinType): TypeProjection? = null
 
         override fun prepareTopLevelType(topLevelType: KotlinType, position: Variance) =
             substitutor.safeSubstitute(topLevelType.unwrap()).let { substitutedType ->
-                TypeApproximator(builtIns).approximateToSuperType(substitutedType, TypeApproximatorConfiguration.CapturedAndIntegerLiteralsTypesApproximation)
-                    ?: substitutedType
+                TypeApproximator(builtIns).let {
+                    if (toSuperType) it.approximateToSuperType(substitutedType, TypeApproximatorConfiguration.CapturedAndIntegerLiteralsTypesApproximation)
+                    else it.approximateToSubType(substitutedType, TypeApproximatorConfiguration.CapturedAndIntegerLiteralsTypesApproximation)
+                } ?: substitutedType
             }
     }
 
