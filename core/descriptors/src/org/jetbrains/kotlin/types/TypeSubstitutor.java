@@ -115,7 +115,7 @@ public class TypeSubstitutor implements TypeSubstitutorMarker {
     @Nullable
     public TypeProjection substitute(@NotNull TypeProjection typeProjection) {
         TypeProjection substitutedTypeProjection = substituteWithoutApproximation(typeProjection);
-        if (!substitution.approximateCapturedTypes() && !substitution.approximateContravariantCapturedTypes()) {
+        if (!substitution.approximateCapturedTypes() && !substitution.approximateContravariantCapturedTypes() || substitutingScopeProvider.isNewInferenceEnabled()) {
             return substitutedTypeProjection;
         }
 

@@ -17325,6 +17325,11 @@ public class DiagnosticsUsingJavacTestGenerated extends AbstractDiagnosticsUsing
                 runTest("compiler/testData/diagnostics/tests/resolve/HiddenDeclarations.kt");
             }
 
+            @TestMetadata("implicitAndExplicitThis.kt")
+            public void testImplicitAndExplicitThis() throws Exception {
+                runTest("compiler/testData/diagnostics/tests/resolve/implicitAndExplicitThis.kt");
+            }
+
             @TestMetadata("implicitReceiverProperty.kt")
             public void testImplicitReceiverProperty() throws Exception {
                 runTest("compiler/testData/diagnostics/tests/resolve/implicitReceiverProperty.kt");

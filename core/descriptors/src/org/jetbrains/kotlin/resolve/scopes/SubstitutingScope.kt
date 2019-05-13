@@ -35,7 +35,7 @@ class SubstitutingScope(private val workerScope: MemberScope, givenSubstitutor: 
 
     private val substitutor: TypeSubstitutor = givenSubstitutor.substitution
         .wrapWithCapturingSubstitution(capturedTypeCreator = substitutingScopeProvider.provideCapturedTypeCreator())
-        .buildSubstitutor()
+        .buildSubstitutor().also { it.setSubstitutingScopeProvider(substitutingScopeProvider) }
 
     private var substitutedDescriptors: MutableMap<DeclarationDescriptor, DeclarationDescriptor>? = null
 
