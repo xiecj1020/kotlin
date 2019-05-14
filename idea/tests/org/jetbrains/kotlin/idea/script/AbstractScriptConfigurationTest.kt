@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.idea.core.script.settings.KotlinScriptingSettings
 import org.jetbrains.kotlin.idea.highlighter.KotlinHighlightingUtil
 import org.jetbrains.kotlin.idea.navigation.GotoCheck
 import org.jetbrains.kotlin.idea.util.application.runWriteAction
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.test.InTextDirectivesUtils
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.jetbrains.kotlin.test.MockLibraryUtil
@@ -74,7 +75,7 @@ abstract class AbstractScriptConfigurationHighlightingTest : AbstractScriptConfi
             }
         })
 
-        updateScriptDependenciesSynchronously(myFile.virtualFile, project)
+        updateScriptDependenciesSynchronously(myFile)
         checkHighlighting(editor, false, false)
     }
 }
@@ -130,7 +131,7 @@ abstract class AbstractScriptDefinitionsOrderTest : AbstractScriptConfigurationT
         }
 
         ScriptDefinitionsManager.getInstance(project).reorderScriptDefinitions()
-        updateScriptDependenciesSynchronously(myFile.virtualFile, project)
+        updateScriptDependenciesSynchronously(myFile)
 
         checkHighlighting(editor, false, false)
     }
@@ -316,14 +317,14 @@ abstract class AbstractScriptConfigurationTest : KotlinCompletionTestCase() {
         if (script == null) error("Test file with script couldn't be found in test project")
 
         configureByExistingFile(script)
-        updateScriptDependenciesSynchronously(script, project)
+        updateScriptDependenciesSynchronously(myFile)
 
         VfsUtil.markDirtyAndRefresh(false, true, true, project.baseDir)
         // This is needed because updateScriptDependencies invalidates psiFile that was stored in myFile field
         myFile = psiManager.findFile(script)
 
-        val isFatalErrorPresent = myFile.virtualFile.getUserData(IdeScriptReportSink.Reports)?.any { it.severity == ScriptReport.Severity.FATAL } == true
-        assert(isFatalErrorPresent || KotlinHighlightingUtil.shouldHighlight(myFile)) {
+        val hasFatalError = IdeScriptReportSink.readReports(myFile as KtFile).any { it.severity == ScriptReport.Severity.FATAL }
+        assert(hasFatalError || KotlinHighlightingUtil.shouldHighlight(myFile)) {
             "Highlighting is switched off for ${myFile.virtualFile.path}"
         }
     }

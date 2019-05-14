@@ -186,7 +186,7 @@ class KtCompilingExecutor(file: ScratchFile) : ScratchExecutor(file) {
             javaParameters.classPath.addAll(JavaParametersBuilder.getModuleDependencies(module))
         }
 
-        val scriptDependencies = ScriptDependenciesManager.getInstance(originalFile.project).getScriptDependencies(originalFile.virtualFile)
+        val scriptDependencies = ScriptDependenciesManager.getInstance(originalFile.project).getScriptDependencies(originalFile)
         javaParameters.classPath.addAll(scriptDependencies.classpath.map { it.absolutePath })
 
         return javaParameters.toCommandLine()

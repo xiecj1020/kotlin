@@ -8,8 +8,6 @@ package org.jetbrains.kotlin.scripting.resolve
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiFile
-import com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.scripting.definitions.KotlinScriptDefinition
@@ -22,12 +20,12 @@ import kotlin.script.experimental.dependencies.ScriptDependencies
 import kotlin.script.experimental.dependencies.ScriptReport
 
 class ScriptContentLoader(private val project: Project) {
-    fun getScriptContents(scriptDefinition: KotlinScriptDefinition, file: VirtualFile)
+    fun getScriptContents(scriptDefinition: KotlinScriptDefinition, file: KtFile)
             = BasicScriptContents(
-        file,
+        file.virtualFile,
         getAnnotations = { loadAnnotations(scriptDefinition, file) })
 
-    private fun loadAnnotations(scriptDefinition: KotlinScriptDefinition, file: VirtualFile): List<Annotation> {
+    private fun loadAnnotations(scriptDefinition: KotlinScriptDefinition, file: KtFile): List<Annotation> {
         val classLoader = scriptDefinition.template.java.classLoader
         // TODO_R: report error on failure to load annotation class
         return ApplicationManager.getApplication().runReadAction<List<Annotation>> {
@@ -48,10 +46,8 @@ class ScriptContentLoader(private val project: Project) {
         }
     }
 
-    private fun getAnnotationEntries(file: VirtualFile, project: Project): Iterable<KtAnnotationEntry> {
-        val psiFile: PsiFile = PsiManager.getInstance(project).findFile(file)
-                               ?: throw IllegalArgumentException("Unable to load PSI from ${file.canonicalPath}")
-        return (psiFile as? KtFile)?.annotationEntries
+    private fun getAnnotationEntries(file: KtFile, project: Project): Iterable<KtAnnotationEntry> {
+        return file.annotationEntries
                ?: throw IllegalArgumentException("Unable to extract kotlin annotations from ${file.name} (${file.fileType})")
     }
 
@@ -63,7 +59,7 @@ class ScriptContentLoader(private val project: Project) {
 
     fun loadContentsAndResolveDependencies(
         scriptDef: KotlinScriptDefinition,
-        file: VirtualFile
+        file: KtFile
     ): DependenciesResolver.ResolveResult {
         val scriptContents = getScriptContents(scriptDef, file)
         val environment = getEnvironment(scriptDef)

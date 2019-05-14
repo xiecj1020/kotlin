@@ -28,7 +28,7 @@ class ScriptExtraImportsProviderExtension : ExtraImportsProviderExtension {
 
     override fun getExtraImports(ktFile: KtFile): Collection<KtImportInfo> =
         ktFile.takeIf { it.isScript() }?.let { file ->
-            val scriptDependencies = ScriptDependenciesProvider.getInstance(file.project)?.getScriptDependencies(file.originalFile)
+            val scriptDependencies = ScriptDependenciesProvider.getInstance(file.project)?.getScriptDependencies(file)
             scriptDependencies?.imports?.map {
                 ScriptExtraImportImpl(
                     ImportPath.fromString(it)

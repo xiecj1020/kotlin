@@ -8,9 +8,9 @@ package org.jetbrains.kotlin.scripting.compiler.plugin.definitions
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.scripting.definitions.ScriptDependenciesProvider
-import org.jetbrains.kotlin.scripting.definitions.findScriptDefinition
+import org.jetbrains.kotlin.scripting.definitions.scriptDefinition
 import org.jetbrains.kotlin.scripting.resolve.ScriptContentLoader
 import org.jetbrains.kotlin.scripting.resolve.ScriptReportSink
 import org.jetbrains.kotlin.scripting.resolve.adjustByDefinition
@@ -25,16 +25,16 @@ class CliScriptDependenciesProvider(private val project: Project) : ScriptDepend
     private val cache = hashMapOf<String, ScriptDependencies?>()
     private val scriptContentLoader = ScriptContentLoader(project)
 
-    override fun getScriptDependencies(file: VirtualFile): ScriptDependencies? = cacheLock.read {
+    override fun getScriptDependencies(file: KtFile): ScriptDependencies? = cacheLock.read {
         calculateExternalDependencies(file)
     }
 
-    private fun calculateExternalDependencies(file: VirtualFile): ScriptDependencies? {
-        val path = file.path
+    private fun calculateExternalDependencies(file: KtFile): ScriptDependencies? {
+        val path = file.virtualFilePath
         val cached = cache[path]
         return if (cached != null) cached
         else {
-            val scriptDef = file.findScriptDefinition(project)
+            val scriptDef = file.scriptDefinition()
             if (scriptDef != null) {
                 val result = scriptContentLoader.loadContentsAndResolveDependencies(scriptDef, file)
 

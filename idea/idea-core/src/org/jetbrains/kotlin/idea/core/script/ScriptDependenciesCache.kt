@@ -19,16 +19,15 @@ package org.jetbrains.kotlin.idea.core.script
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElementFinder
-import com.intellij.psi.PsiManager
 import com.intellij.psi.search.NonClasspathDirectoriesScope
-import com.intellij.util.containers.SLRUMap
+import com.intellij.psi.util.CachedValueProvider
+import com.intellij.psi.util.CachedValuesManager
+import com.intellij.util.containers.SLRUCache
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.jetbrains.kotlin.idea.core.util.EDT
-import org.jetbrains.kotlin.utils.addIfNotNull
-import java.io.File
+import org.jetbrains.kotlin.psi.KtFile
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
@@ -44,13 +43,36 @@ class ScriptDependenciesCache(private val project: Project) {
         const val MAX_SCRIPTS_CACHED = 50
     }
 
-    private val cacheLock = ReentrantReadWriteLock()
-    private val cache = SLRUMap<VirtualFile, ScriptDependencies>(MAX_SCRIPTS_CACHED, MAX_SCRIPTS_CACHED)
+    private val scriptDependenciesProvider = CachedValueProvider<SLRUCache<KtFile, ScriptDependencies?>> {
+        CachedValueProvider.Result(
+            object : SLRUCache<KtFile, ScriptDependencies?>(MAX_SCRIPTS_CACHED, MAX_SCRIPTS_CACHED) {
+                override fun createValue(file: KtFile): ScriptDependencies = ScriptDependencies.Empty
+            },
+            ScriptDependenciesModificationTracker.getInstance(project)
+        )
+    }
 
-    operator fun get(virtualFile: VirtualFile): ScriptDependencies? = cacheLock.write { cache[virtualFile] }
+    private val cache = CachedValuesManager.getManager(project).getCachedValue(
+        project,
+        scriptDependenciesProvider
+    )
+
+    private fun getScriptDependencies(file: KtFile): ScriptDependencies? {
+        return cacheLock.write {
+            cache.getIfCached(file)
+        }
+    }
+
+    private fun getAllScriptDependencies(): List<Pair<KtFile, ScriptDependencies>> {
+        return cache.entrySet().mapNotNull { it.takeIf { it.value != null }?.let { it.key to it.value!! } }
+    }
+
+    private val cacheLock = ReentrantReadWriteLock()
+
+    operator fun get(virtualFile: KtFile): ScriptDependencies? = getScriptDependencies(virtualFile)
 
     val allScriptsClasspath by ClearableLazyValue(cacheLock) {
-        val files = cache.entrySet().flatMap { it.value.classpath }.distinct()
+        val files = getAllScriptDependencies().flatMap { it.second.classpath }.distinct()
         ScriptDependenciesManager.toVfsRoots(files)
     }
 
@@ -59,14 +81,14 @@ class ScriptDependenciesCache(private val project: Project) {
     }
 
     val allLibrarySources by ClearableLazyValue(cacheLock) {
-        ScriptDependenciesManager.toVfsRoots(cache.entrySet().flatMap { it.value.sources }.distinct())
+        ScriptDependenciesManager.toVfsRoots(getAllScriptDependencies().flatMap { it.second.sources }.distinct())
     }
 
     val allLibrarySourcesScope by ClearableLazyValue(cacheLock) {
         NonClasspathDirectoriesScope(allLibrarySources)
     }
 
-    private fun onChange(files: List<VirtualFile>) {
+    private fun onChange(files: List<KtFile>) {
         this::allScriptsClasspath.clearValue()
         this::allScriptsClasspathScope.clearValue()
         this::allLibrarySources.clearValue()
@@ -81,12 +103,12 @@ class ScriptDependenciesCache(private val project: Project) {
         updateHighlighting(files)
     }
 
-    private fun updateHighlighting(files: List<VirtualFile>) {
+    private fun updateHighlighting(files: List<KtFile>) {
         ScriptDependenciesModificationTracker.getInstance(project).incModificationCount()
 
         GlobalScope.launch(EDT(project)) {
             files.filter { it.isValid }.forEach {
-                PsiManager.getInstance(project).findFile(it)?.let { psiFile ->
+                it.let { psiFile ->
                     DaemonCodeAnalyzer.getInstance(project).restart(psiFile)
                 }
             }
@@ -100,17 +122,18 @@ class ScriptDependenciesCache(private val project: Project) {
 
     fun clear() {
         val keys = cacheLock.read {
-            val keys = mutableListOf<VirtualFile>()
-            cache.iterateKeys { keys.addIfNotNull(it) }
-            cacheLock.write(cache::clear)
+            val keys = getAllScriptDependencies().map { it.first }
+            cacheLock.write {
+                cache.clear()
+            }
             keys
         }
         onChange(keys)
     }
 
-    fun save(virtualFile: VirtualFile, new: ScriptDependencies): Boolean {
+    fun save(virtualFile: KtFile, new: ScriptDependencies): Boolean {
         val old = cacheLock.write {
-            val old = cache[virtualFile]
+            val old = getScriptDependencies(virtualFile)
             cache.put(virtualFile, new)
             old
         }
@@ -122,7 +145,7 @@ class ScriptDependenciesCache(private val project: Project) {
         return changed
     }
 
-    fun delete(virtualFile: VirtualFile): Boolean {
+    fun delete(virtualFile: KtFile): Boolean {
         val changed = cacheLock.write {
             cache.remove(virtualFile)
         }
@@ -132,28 +155,6 @@ class ScriptDependenciesCache(private val project: Project) {
         return changed
     }
 
-    fun combineDependencies(filePredicate: (VirtualFile) -> Boolean): ScriptDependencies = cacheLock.read {
-        val sources = mutableListOf<File>()
-        val binaries = mutableListOf<File>()
-        val imports = mutableListOf<String>()
-        val scripts = mutableListOf<File>()
-
-        val relevantEntries = cache.entrySet().filter { filePredicate(it.key) }.map { it.value }
-        relevantEntries.forEach {
-            sources += it.sources
-            binaries += it.classpath
-            imports += it.imports
-            scripts += it.scripts
-        }
-
-        return ScriptDependencies(
-            classpath = binaries.distinct(),
-            sources = sources.distinct(),
-            imports = imports.distinct(),
-            scripts = scripts.distinct(),
-            javaHome = relevantEntries.map { it.javaHome }.firstOrNull()
-        )
-    }
 }
 
 private fun <R> KProperty0<R>.clearValue() {

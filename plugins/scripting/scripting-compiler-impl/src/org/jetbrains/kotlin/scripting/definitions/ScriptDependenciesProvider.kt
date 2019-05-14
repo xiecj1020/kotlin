@@ -7,13 +7,11 @@ package org.jetbrains.kotlin.scripting.definitions
 
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiFile
+import org.jetbrains.kotlin.psi.KtFile
 import kotlin.script.experimental.dependencies.ScriptDependencies
 
 interface ScriptDependenciesProvider {
-    fun getScriptDependencies(file: VirtualFile): ScriptDependencies?
-    fun getScriptDependencies(file: PsiFile) = getScriptDependencies(file.virtualFile ?: file.originalFile.virtualFile)
+    fun getScriptDependencies(file: KtFile): ScriptDependencies?
 
     companion object {
         fun getInstance(project: Project): ScriptDependenciesProvider? =

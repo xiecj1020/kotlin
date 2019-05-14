@@ -9,8 +9,6 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.search.DelegatingGlobalSearchScope
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.NonClasspathDirectoriesScope
 import com.intellij.util.containers.SLRUCache
@@ -19,13 +17,14 @@ import org.jetbrains.kotlin.idea.core.script.ScriptDependenciesManager
 import org.jetbrains.kotlin.idea.core.script.dependencies.ScriptAdditionalIdeaDependenciesProvider
 import org.jetbrains.kotlin.idea.stubindex.KotlinSourceFilterScope
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.scripting.definitions.KotlinScriptDefinition
 import java.io.File
 import kotlin.script.experimental.dependencies.ScriptDependencies
 
 data class ScriptModuleInfo(
     val project: Project,
-    val scriptFile: VirtualFile,
+    val scriptFile: KtFile,
     val scriptDefinition: KotlinScriptDefinition
 ) : IdeaModuleInfo {
     override val moduleOrigin: ModuleOrigin
@@ -33,7 +32,7 @@ data class ScriptModuleInfo(
 
     override val name: Name = Name.special("<script ${scriptFile.name} ${scriptDefinition.name}>")
 
-    override fun contentScope() = GlobalSearchScope.fileScope(project, scriptFile)
+    override fun contentScope() = GlobalSearchScope.fileScope(project, scriptFile.virtualFile)  // TODO
 
     override fun dependencies(): List<IdeaModuleInfo> {
         return arrayListOf<IdeaModuleInfo>(this).apply {
@@ -90,7 +89,7 @@ sealed class ScriptDependenciesInfo(val project: Project) : IdeaModuleInfo, Bina
 
     class ForFile(
         project: Project,
-        val scriptFile: VirtualFile,
+        val scriptFile: KtFile,
         val scriptDefinition: KotlinScriptDefinition
     ) : ScriptDependenciesInfo(project) {
         private val externalDependencies: ScriptDependencies

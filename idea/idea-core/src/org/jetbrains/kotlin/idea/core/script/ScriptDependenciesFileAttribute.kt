@@ -18,11 +18,18 @@ package org.jetbrains.kotlin.idea.core.script
 
 import com.intellij.openapi.vfs.VirtualFile
 import org.jetbrains.kotlin.idea.core.util.*
+import org.jetbrains.kotlin.psi.KtFile
 import java.io.DataInput
 import java.io.DataOutput
 import kotlin.script.experimental.dependencies.ScriptDependencies
 
-var VirtualFile.scriptDependencies: ScriptDependencies? by cachedFileAttribute(
+var KtFile.scriptDependencies: ScriptDependencies?
+    get() = (this.virtualFile ?: this.originalFile.virtualFile).scriptDependencies
+    set(dependencies) {
+        (this.virtualFile ?: this.originalFile.virtualFile).scriptDependencies = dependencies
+    }
+
+private var VirtualFile.scriptDependencies: ScriptDependencies? by cachedFileAttribute(
     name = "kotlin-script-dependencies",
     version = 3,
     read = {

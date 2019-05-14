@@ -16,8 +16,10 @@ import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.kotlin.idea.core.script.ScriptDependenciesUpdater
 import org.jetbrains.kotlin.idea.core.script.settings.KotlinScriptingSettings
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.scripting.definitions.KotlinScriptDefinition
 import org.jetbrains.kotlin.scripting.definitions.findScriptDefinition
+import org.jetbrains.kotlin.scripting.definitions.scriptDefinition
 import org.jetbrains.kotlin.scripting.resolve.asResolveFailure
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -31,12 +33,12 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
     private var notifyRootChange: Boolean = false
     private var backgroundTasksQueue: LoaderBackgroundTask? = null
 
-    override fun isApplicable(file: VirtualFile): Boolean {
-        val scriptDefinition = file.findScriptDefinition(project) ?: return false
+    override fun isApplicable(file: KtFile): Boolean {
+        val scriptDefinition = file.scriptDefinition() ?: return false
         return ScriptDependenciesUpdater.getInstance(project).isAsyncDependencyResolver(scriptDefinition)
     }
 
-    override fun loadDependencies(file: VirtualFile) {
+    override fun loadDependencies(file: KtFile) {
         lock.write {
             if (backgroundTasksQueue == null) {
                 backgroundTasksQueue = LoaderBackgroundTask()
@@ -72,8 +74,8 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
         return false
     }
 
-    private fun runDependenciesUpdate(file: VirtualFile) {
-        val scriptDef = runReadAction { file.findScriptDefinition(project) } ?: return
+    private fun runDependenciesUpdate(file: KtFile) {
+        val scriptDef = runReadAction { file.scriptDefinition() } ?: return
         // runBlocking is using there to avoid loading dependencies asynchronously
         // because it leads to starting more than one gradle daemon in case of resolving dependencies in build.gradle.kts
         // It is more efficient to use one hot daemon consistently than multiple daemon in parallel
@@ -87,7 +89,7 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
         processResult(result, file, scriptDef)
     }
 
-    private suspend fun resolveDependencies(file: VirtualFile, scriptDef: KotlinScriptDefinition): DependenciesResolver.ResolveResult {
+    private suspend fun resolveDependencies(file: KtFile, scriptDef: KotlinScriptDefinition): DependenciesResolver.ResolveResult {
         val dependenciesResolver = scriptDef.dependencyResolver
         val scriptContents = contentLoader.getScriptContents(scriptDef, file)
         val environment = contentLoader.getEnvironment(scriptDef)
@@ -100,7 +102,7 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
     }
 
     private inner class LoaderBackgroundTask {
-        private val sequenceOfFiles: ConcurrentLinkedQueue<VirtualFile> = ConcurrentLinkedQueue()
+        private val sequenceOfFiles: ConcurrentLinkedQueue<KtFile> = ConcurrentLinkedQueue()
         private var forceStop : Boolean = false
         private var startedSilently : Boolean = false
 
@@ -137,7 +139,7 @@ class AsyncScriptDependenciesLoader internal constructor(project: Project) : Scr
             }.queue()
         }
 
-        fun addTask(file: VirtualFile) {
+        fun addTask(file: KtFile) {
             if (sequenceOfFiles.contains(file)) return
 
             sequenceOfFiles.add(file)

@@ -68,7 +68,7 @@ class StandaloneScriptRunConfigurationTest : KotlinCodeInsightTestCase() {
     fun testOnFileMoveWithDefaultWorkingDir() {
         configureByFile("move/script.kts")
 
-        ScriptDependenciesManager.updateScriptDependenciesSynchronously(myFile.virtualFile, project)
+        ScriptDependenciesManager.updateScriptDependenciesSynchronously(myFile)
 
         val script = KotlinScriptFqnIndex.instance.get("foo.Script", project, project.allScope()).single()
         val runConfiguration = createConfigurationFromElement(script, save = true) as KotlinStandaloneScriptRunConfiguration
@@ -95,7 +95,7 @@ class StandaloneScriptRunConfigurationTest : KotlinCodeInsightTestCase() {
     fun testOnFileMoveWithNonDefaultWorkingDir() {
         configureByFile("move/script.kts")
 
-        ScriptDependenciesManager.updateScriptDependenciesSynchronously(myFile.virtualFile, project)
+        ScriptDependenciesManager.updateScriptDependenciesSynchronously(myFile)
 
         val script = KotlinScriptFqnIndex.instance.get("foo.Script", project, project.allScope()).single()
         val runConfiguration = createConfigurationFromElement(script, save = true) as KotlinStandaloneScriptRunConfiguration

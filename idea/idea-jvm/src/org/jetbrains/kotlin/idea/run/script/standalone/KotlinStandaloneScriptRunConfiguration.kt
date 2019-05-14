@@ -35,6 +35,7 @@ import com.intellij.openapi.util.DefaultJDOMExternalizer
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiManager
 import com.intellij.refactoring.listeners.RefactoringElementAdapter
 import com.intellij.refactoring.listeners.RefactoringElementListener
 import org.jdom.Element
@@ -204,9 +205,12 @@ private class ScriptCommandLineState(
         val scriptVFile = LocalFileSystem.getInstance().findFileByIoFile(File(filePath)) ?:
                           throw CantRunException("Script file was not found in project")
 
+        val ktFile = PsiManager.getInstance(environment.project).findFile(scriptVFile) as? KtFile
+            ?: throw CantRunException("Script file was not found in project")
+
         params.classPath.add(PathUtil.kotlinPathsForIdeaPlugin.compilerPath)
 
-        val scriptClasspath = ScriptDependenciesManager.getInstance(environment.project).getScriptClasspath(scriptVFile)
+        val scriptClasspath = ScriptDependenciesManager.getInstance(environment.project).getScriptClasspath(ktFile)
         scriptClasspath.forEach {
             params.classPath.add(it.presentableUrl)
         }

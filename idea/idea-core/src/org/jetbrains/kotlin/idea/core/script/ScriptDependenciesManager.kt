@@ -21,11 +21,13 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.StandardFileSystems
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiFile
+import com.intellij.psi.PsiManager
 import com.intellij.util.io.URLUtil
 import org.jetbrains.annotations.TestOnly
 import org.jetbrains.kotlin.idea.core.script.dependencies.SyncScriptDependenciesLoader
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.scripting.definitions.ScriptDependenciesProvider
-import org.jetbrains.kotlin.scripting.definitions.findScriptDefinition
 import java.io.File
 import kotlin.script.experimental.dependencies.ScriptDependencies
 
@@ -35,7 +37,7 @@ import kotlin.script.experimental.dependencies.ScriptDependencies
 class IdeScriptDependenciesProvider(
     private val scriptDependenciesManager: ScriptDependenciesManager
 ) : ScriptDependenciesProvider {
-    override fun getScriptDependencies(file: VirtualFile): ScriptDependencies? {
+    override fun getScriptDependencies(file: KtFile): ScriptDependencies? {
         return scriptDependenciesManager.getScriptDependencies(file)
     }
 }
@@ -44,8 +46,8 @@ class ScriptDependenciesManager internal constructor(
     private val cacheUpdater: ScriptDependenciesUpdater,
     private val cache: ScriptDependenciesCache
 ) {
-    fun getScriptClasspath(file: VirtualFile): List<VirtualFile> = toVfsRoots(cacheUpdater.getCurrentDependencies(file).classpath)
-    fun getScriptDependencies(file: VirtualFile): ScriptDependencies = cacheUpdater.getCurrentDependencies(file)
+    fun getScriptClasspath(file: KtFile): List<VirtualFile> = toVfsRoots(getScriptDependencies(file).classpath)
+    fun getScriptDependencies(file: KtFile): ScriptDependencies = cacheUpdater.getCurrentDependencies(file)
 
     fun getAllScriptsClasspathScope() = cache.allScriptsClasspathScope
     fun getAllLibrarySourcesScope() = cache.allLibrarySourcesScope
@@ -77,7 +79,15 @@ class ScriptDependenciesManager internal constructor(
         @TestOnly
         fun updateScriptDependenciesSynchronously(virtualFile: VirtualFile, project: Project) {
             val loader = SyncScriptDependenciesLoader(project)
-            loader.updateDependencies(virtualFile)
+            val psiFile = PsiManager.getInstance(project).findFile(virtualFile) as? KtFile ?: return
+            loader.updateDependencies(psiFile)
+            loader.notifyRootsChanged()
+        }
+
+        @TestOnly
+        fun updateScriptDependenciesSynchronously(ktFile: PsiFile) {
+            val loader = SyncScriptDependenciesLoader(ktFile.project)
+            loader.updateDependencies(ktFile as KtFile)
             loader.notifyRootsChanged()
         }
     }

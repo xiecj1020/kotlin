@@ -63,7 +63,7 @@ class ScriptExternalHighlightingPass(
         }
 
         if (!ScriptDependenciesUpdater.areDependenciesCached(file)) {
-            val scriptDependencies = ScriptDependenciesManager.getInstance(file.project).getScriptDependencies(file.virtualFile)
+            val scriptDependencies = ScriptDependenciesManager.getInstance(file.project).getScriptDependencies(file)
             if (scriptDependencies == ScriptDependencies.Empty) {
                 showNotification(
                     file,
@@ -72,7 +72,8 @@ class ScriptExternalHighlightingPass(
             }
         }
 
-        val reports = file.virtualFile.getUserData(IdeScriptReportSink.Reports) ?: return
+        val reports = IdeScriptReportSink.readReports(file)
+        if (reports.isEmpty()) return
 
         val annotations = reports.mapNotNull { (message, severity, position) ->
             val (startOffset, endOffset) = position?.let { computeOffsets(document, position) } ?: 0 to 0
