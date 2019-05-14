@@ -14681,6 +14681,11 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
             runTest("compiler/testData/codegen/box/jvmName/propertyName.kt");
         }
 
+        @TestMetadata("propertySyntheticMethod.kt")
+        public void testPropertySyntheticMethod() throws Exception {
+            runTest("compiler/testData/codegen/box/jvmName/propertySyntheticMethod.kt");
+        }
+
         @TestMetadata("renamedFileClass.kt")
         public void testRenamedFileClass() throws Exception {
             runTest("compiler/testData/codegen/box/jvmName/renamedFileClass.kt");
