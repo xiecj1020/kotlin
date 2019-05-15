@@ -16,14 +16,13 @@
 
 package org.jetbrains.kotlin.idea.core.script
 
-import com.intellij.execution.configurations.CommandLineTokenizer
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskId
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotificationListenerAdapter
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskType
 import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.project.Project
-import org.gradle.tooling.ProjectConnection
+import com.intellij.util.EnvironmentUtil
 import org.jetbrains.kotlin.idea.framework.GRADLE_SYSTEM_ID
 import org.jetbrains.kotlin.lexer.KotlinLexer
 import org.jetbrains.kotlin.lexer.KtTokens
@@ -31,17 +30,14 @@ import org.jetbrains.kotlin.scripting.definitions.KotlinScriptDefinition
 import org.jetbrains.kotlin.scripting.definitions.KotlinScriptDefinitionAdapterFromNewAPIBase
 import org.jetbrains.kotlin.scripting.resolve.KotlinScriptDefinitionFromAnnotatedTemplate
 import org.jetbrains.plugins.gradle.config.GradleSettingsListenerAdapter
-import org.jetbrains.plugins.gradle.service.execution.GradleExecutionHelper
 import org.jetbrains.plugins.gradle.settings.DistributionType
 import org.jetbrains.plugins.gradle.settings.GradleExecutionSettings
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
 import org.jetbrains.plugins.gradle.settings.GradleSettingsListener
 import org.jetbrains.plugins.gradle.util.GradleConstants
 import java.io.File
-import java.lang.IllegalStateException
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.collections.LinkedHashSet
 import kotlin.reflect.KClass
 import kotlin.script.dependencies.Environment
 import kotlin.script.dependencies.ScriptContents
@@ -171,26 +167,22 @@ class GradleScriptDefinitionsContributor(private val project: Project) : ScriptD
         templateClass: String, dependencySelector: Regex,
         additionalResolverClasspath: (gradleLibDir: File) -> List<File>
     ): List<KotlinScriptDefinition> {
-        fun createEnvironment(gradleExeSettings: GradleExecutionSettings): Environment {
-            val gradleJvmOptions = gradleExeSettings.daemonVmOptions?.let { vmOptions ->
-                CommandLineTokenizer(vmOptions).toList()
-                    .mapNotNull { it?.let { it as? String } }
-                    .filterNot(String::isBlank)
-                    .distinct()
-            } ?: emptyList()
-
-
+        fun createEnvironment(
+            gradleExeSettings: GradleExecutionSettings,
+            projectSettings: GradleProjectSettings
+        ): Environment {
             return mapOf(
                 "gradleHome" to gradleExeSettings.gradleHome?.let(::File),
-                "projectRoot" to (project.basePath ?: project.baseDir.canonicalPath)?.let(::File),
-                "gradleWithConnection" to { action: (ProjectConnection) -> Unit ->
-                    GradleExecutionHelper().execute(project.basePath!!, null) { action(it) }
-                },
                 "gradleJavaHome" to gradleExeSettings.javaHome,
-                "gradleJvmOptions" to gradleJvmOptions,
+
+                "projectRoot" to projectSettings.externalProjectPath.let(::File),
+
+                "gradleOptions" to emptyList<String>(), // There is no option in UI to set project wide gradleOptions
+                "gradleJvmOptions" to gradleExeSettings.jvmArguments,
+                "gradleEnvironmentVariables" to if (gradleExeSettings.isPassParentEnvs) EnvironmentUtil.getEnvironmentMap() else emptyMap(),
+
                 "getScriptSectionTokens" to ::topLevelSectionCodeTextTokens
             )
-
         }
 
         val gradleSettings = ExternalSystemApiUtil.getSettings(project, GradleConstants.SYSTEM_ID)
@@ -218,7 +210,7 @@ class GradleScriptDefinitionsContributor(private val project: Project) : ScriptD
         return loadDefinitionsFromTemplates(
             listOf(templateClass),
             templateClasspath,
-            createEnvironment(gradleExeSettings),
+            createEnvironment(gradleExeSettings, projectSettings),
             additionalResolverClasspath(gradleLibDir)
         ).map {
             // Expand scope for old gradle script definition
