@@ -703,14 +703,9 @@ class NewResolvedCallImpl<D : CallableDescriptor>(
                 {
                     val substituted = candidateDescriptor.substitute(resolvedCallAtom.substitutor)
 
-                    substituteProjectedOutPropertyDescriptor(substitutor ?: FreshVariableNewTypeSubstitutor.Empty, substituted)?.let {
-                        return@run it
-                    }
-
                     val result = substituted.substituteAndApproximateCapturedTypes(
                         substitutor ?: FreshVariableNewTypeSubstitutor.Empty
                     )
-
                     result
                 }
                 else ->

@@ -21,11 +21,12 @@ import org.jetbrains.kotlin.resolve.calls.inference.components.NewTypeSubstituto
 import org.jetbrains.kotlin.resolve.calls.inference.model.ConstraintStorage
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.types.*
-import org.jetbrains.kotlin.types.checker.ClassicTypeSystemContext
+import org.jetbrains.kotlin.types.checker.NewCapturedType
 import org.jetbrains.kotlin.types.model.StubTypeMarker
 import org.jetbrains.kotlin.types.model.TypeConstructorMarker
 import org.jetbrains.kotlin.types.model.TypeSubstitutorMarker
 import org.jetbrains.kotlin.types.model.TypeSystemInferenceExtensionContext
+import org.jetbrains.kotlin.types.typeUtil.contains
 
 fun ConstraintStorage.buildCurrentSubstitutor(
     context: TypeSystemInferenceExtensionContext,
@@ -70,15 +71,17 @@ fun CallableDescriptor.substitute(substitutor: NewTypeSubstitutor): CallableDesc
     return substitute(TypeSubstitutor.create(wrappedSubstitution))
 }
 
-fun CallableDescriptor.substituteAndApproximateCapturedTypes(substitutor: NewTypeSubstitutor, toSuperType: Boolean = true): CallableDescriptor {
+fun CallableDescriptor.substituteAndApproximateCapturedTypes(substitutor: NewTypeSubstitutor): CallableDescriptor {
     val wrappedSubstitution = object : TypeSubstitution() {
         override fun get(key: KotlinType): TypeProjection? = null
 
         override fun prepareTopLevelType(topLevelType: KotlinType, position: Variance) =
             substitutor.safeSubstitute(topLevelType.unwrap()).let { substitutedType ->
                 TypeApproximator(builtIns).let {
-                    if (toSuperType) it.approximateToSuperType(substitutedType, TypeApproximatorConfiguration.CapturedAndIntegerLiteralsTypesApproximation)
-                    else it.approximateToSubType(substitutedType, TypeApproximatorConfiguration.CapturedAndIntegerLiteralsTypesApproximation)
+                    if (topLevelType.isCapturedOutType && position == Variance.IN_VARIANCE) {
+                        it.approximateToSubType(substitutedType, TypeApproximatorConfiguration.CapturedAndIntegerLiteralsTypesApproximation)
+                    }
+                    else it.approximateToSuperType(substitutedType, TypeApproximatorConfiguration.CapturedAndIntegerLiteralsTypesApproximation)
                 } ?: substitutedType
             }
     }
@@ -87,3 +90,28 @@ fun CallableDescriptor.substituteAndApproximateCapturedTypes(substitutor: NewTyp
 }
 
 internal fun <E> MutableList<E>.trimToSize(newSize: Int) = subList(newSize, size).clear()
+
+private val KotlinType.isCapturedOutType: Boolean
+    get() {
+        if (this !is NewCapturedType) return false
+        return constructor.projection.isOutProjection
+    }
+
+
+private val KotlinType.containsCapturedType: Boolean
+    get() {
+        if (isCapturedOutType) return true
+        var type: NewCapturedType? = null
+        contains {
+            if (it is NewCapturedType) {
+                type = it
+                true
+            } else {
+                false
+            }
+        }
+        return type?.constructor?.projection?.isOutProjection ?: false
+    }
+
+private val TypeProjection.isOutProjection: Boolean
+    get() = isStarProjection || projectionKind == Variance.OUT_VARIANCE
