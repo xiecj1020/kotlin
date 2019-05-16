@@ -29,11 +29,12 @@ if (kotlinBuildProperties.isInJpsBuildIdeaSync) {
 
 val runtimeJar by configurations.creating
 val compile by configurations  // maven plugin writes pom compile scope from compile configuration by default
-val libraries by configurations.creating {
+val proguardLibraries by configurations.creating {
     extendsFrom(compile)
 }
 
-val trove4jJar by configurations.creating
+// Libraries to copy to the lib directory
+val libraries by configurations.creating
 
 val default by configurations
 default.extendsFrom(runtimeJar)
@@ -50,8 +51,8 @@ dependencies {
     compile(project(":kotlin-reflect"))
     compile(commonDep("org.jetbrains.intellij.deps", "trove4j"))
 
-    libraries(project(":kotlin-annotations-jvm"))
-    libraries(
+    proguardLibraries(project(":kotlin-annotations-jvm"))
+    proguardLibraries(
         files(
             firstFromJavaHomeThatExists("jre/lib/rt.jar", "../Classes/classes.jar"),
             firstFromJavaHomeThatExists("jre/lib/jsse.jar", "../Classes/jsse.jar"),
@@ -63,7 +64,7 @@ dependencies {
         fatJarContents(project(it)) { isTransitive = false }
     }
 
-    trove4jJar(intellijDep()) { includeIntellijCoreJarDependencies(project) { it.startsWith("trove4j") } }
+    libraries(intellijDep()) { includeIntellijCoreJarDependencies(project) { it.startsWith("trove4j") } }
 
     fatJarContents(kotlinBuiltins())
     fatJarContents(commonDep("javax.inject"))
@@ -125,7 +126,7 @@ val proguard by task<ProGuardTask> {
     inputs.files(packCompiler.outputs.files.singleFile)
     outputs.file(outputJar)
 
-    libraryjars(mapOf("filter" to "!META-INF/versions/**"), libraries)
+    libraryjars(mapOf("filter" to "!META-INF/versions/**"), proguardLibraries)
 
     printconfiguration("$buildDir/compiler.pro.dump")
 }
@@ -133,7 +134,7 @@ val proguard by task<ProGuardTask> {
 val pack = if (shrink) proguard else packCompiler
 
 dist(targetName = "$compilerBaseName.jar", fromTask = pack) {
-    from(trove4jJar)
+    from(libraries)
 }
 
 runtimeJarArtifactBy(pack, pack.outputs.files.singleFile) {
