@@ -29,6 +29,11 @@ public class HierarchicalExpectActualTestGenerated extends AbstractHierarchicalE
         KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/multiModuleHighlighting/hierarchicalExpectActualMatching"), Pattern.compile("^([^\\.]+)$"), TargetBackend.ANY, false);
     }
 
+    @TestMetadata("diamondActualInBottom")
+    public void testDiamondActualInBottom() throws Exception {
+        runTest("idea/testData/multiModuleHighlighting/hierarchicalExpectActualMatching/diamondActualInBottom/");
+    }
+
     @TestMetadata("diamondActualOnOnePath")
     public void testDiamondActualOnOnePath() throws Exception {
         runTest("idea/testData/multiModuleHighlighting/hierarchicalExpectActualMatching/diamondActualOnOnePath/");
@@ -57,6 +62,21 @@ public class HierarchicalExpectActualTestGenerated extends AbstractHierarchicalE
     @TestMetadata("duplicateActualsImplicit")
     public void testDuplicateActualsImplicit() throws Exception {
         runTest("idea/testData/multiModuleHighlighting/hierarchicalExpectActualMatching/duplicateActualsImplicit/");
+    }
+
+    @TestMetadata("test")
+    public void testTest() throws Exception {
+        runTest("idea/testData/multiModuleHighlighting/hierarchicalExpectActualMatching/test/");
+    }
+
+    @TestMetadata("topLevelProperties")
+    public void testTopLevelProperties() throws Exception {
+        runTest("idea/testData/multiModuleHighlighting/hierarchicalExpectActualMatching/topLevelProperties/");
+    }
+
+    @TestMetadata("topLevelFunctions")
+    public void testTopLevelFunctions() throws Exception {
+        runTest("idea/testData/multiModuleHighlighting/hierarchicalExpectActualMatching/topLevelFunctions/");
     }
 
     @TestMetadata("duplicateActualsOneWeaklyIncompatible")
