@@ -936,7 +936,6 @@ class NewMultiplatformIT : BaseGradleIT() {
             "fooReleaseExecutable" to "foo",
             "barReleaseExecutable" to "bar",
             "bazReleaseExecutable" to "my-baz",
-            "testDebugExecutable" to "test",
             "test2ReleaseExecutable" to "test2",
             "releaseStatic" to "native_binary",
             "releaseShared" to "native_binary"
@@ -1128,8 +1127,22 @@ class NewMultiplatformIT : BaseGradleIT() {
 
     @Test
     fun testNativeTests() = with(Project("new-mpp-native-tests", gradleVersion)) {
-        val testTasks = listOf("macos64Test", "linux64Test", "mingw64Test")
-        val hostTestTask = "${nativeHostTargetName}Test"
+        val defaultTestTasks = listOf("macos64Test", "linux64Test", "mingw64Test")
+        val anotherTestTasks = listOf(
+            "macos64AnotherDebugTest",
+            "linux64AnotherDebugTest",
+            "mingw64AnotherDebugTest"
+        )
+        val testTasks = defaultTestTasks + anotherTestTasks
+        val defaultHostTestTask = "${nativeHostTargetName}Test"
+        val anotherHostTestTask = "${nativeHostTargetName}AnotherDebugTest"
+
+        val suffix = if (isWindows) "exe" else "kexe"
+        val outputFiles = listOf(
+            "build/bin/$nativeHostTargetName/debugTest/test.$suffix",
+            "build/bin/$nativeHostTargetName/anotherDebugTest/another.$suffix"
+        )
+
         build("tasks") {
             assertSuccessful()
             println(output)
@@ -1138,10 +1151,63 @@ class NewMultiplatformIT : BaseGradleIT() {
                 assertTrue(output.contains("$it - "), "There is no test task '$it' in the task list.")
             }
         }
+
+        // Check that tests are not built during the ":assemble" execution
+        build("assemble") {
+            assertSuccessful()
+            outputFiles.forEach {
+                assertNoSuchFile(it)
+            }
+        }
+
         build("check") {
             assertSuccessful()
-            assertTasksExecuted(":$hostTestTask")
-            assertTestResults("testProject/new-mpp-native-tests/TEST-TestKt.xml", hostTestTask)
+            assertTasksExecuted(":$defaultHostTestTask", ":$anotherHostTestTask")
+            assertContains("Another test")
+            outputFiles.forEach {
+                assertFileExists(it)
+            }
+            // TODO: What do we do with test results?
+            assertTestResults("testProject/new-mpp-native-tests/TEST-TestKt.xml", defaultHostTestTask)
+        }
+
+        // Check that test binaries can be accessed in a buildscript.
+        build("checkNewGetters") {
+            assertSuccessful()
+            defaultTestTasks.forEach {
+                assertContains("Get test: $it")
+                assertContains("Find test: $it")
+            }
+            anotherTestTasks.forEach {
+                assertContains("Get another test: $it")
+                assertContains("Find another test: $it")
+            }
+        }
+
+        // Check that accessing a test as an executable fails or returns null and shows the corresponding warning.
+        build("checkOldGet") {
+            assertFailed()
+            assertContains(
+                """
+                    |Probably you are accessing the default test binary using the 'binaries.getExecutable("test", DEBUG)' method.
+                    |Since 1.3.40 tests are represented by a separate binary type. To get the default test binary, use:
+                    |
+                    |    binaries.getTest(DEBUG)
+                """.trimMargin()
+            )
+        }
+
+        build("checkOldFind") {
+            assertSuccessful()
+            assertContains(
+                """
+                    |Probably you are accessing the default test binary using the 'binaries.findExecutable("test", DEBUG)' method.
+                    |Since 1.3.40 tests are represented by a separate binary type. To get the default test binary, use:
+                    |
+                    |    binaries.findTest(DEBUG)
+                """.trimMargin()
+            )
+            assertContains("Find test: null")
         }
     }
 

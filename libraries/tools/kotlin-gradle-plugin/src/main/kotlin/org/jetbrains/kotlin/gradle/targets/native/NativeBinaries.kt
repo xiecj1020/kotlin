@@ -13,6 +13,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.tasks.AbstractExecTask
 import org.jetbrains.kotlin.gradle.plugin.AbstractKotlinTargetConfigurator
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTestTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinNativeLink
 import org.jetbrains.kotlin.gradle.utils.lowerCamelCaseName
 import org.jetbrains.kotlin.konan.target.Family
@@ -87,15 +88,8 @@ class Executable constructor(
     name: String,
     baseName: String,
     buildType: NativeBuildType,
-    compilation: KotlinNativeCompilation,
-    internal val isDefaultTestExecutable: Boolean
+    compilation: KotlinNativeCompilation
 ) : NativeBinary(name, baseName, buildType, compilation) {
-
-    constructor(
-        name: String,
-        baseName: String,
-        buildType: NativeBuildType,
-        compilation: KotlinNativeCompilation) : this(name, baseName, buildType, compilation, false)
 
     override val outputKind: NativeOutputKind
         get() = NativeOutputKind.EXECUTABLE
@@ -114,20 +108,14 @@ class Executable constructor(
     }
 
     /**
-     * A name of task running this executable.
+     * A name of a task running this executable.
      * Returns null if the executables's target is not a host one (macosX64, linuxX64 or mingw64).
      */
     val runTaskName: String?
-        get() {
-            if (target.konanTarget !in listOf(KonanTarget.MACOS_X64, KonanTarget.LINUX_X64, KonanTarget.MINGW_X64)) {
-                return null
-            }
-
-            return if (isDefaultTestExecutable) {
-                lowerCamelCaseName(compilation.target.targetName, AbstractKotlinTargetConfigurator.testTaskNameSuffix)
-            } else {
-                lowerCamelCaseName("run", name, compilation.target.targetName)
-            }
+        get() = if (target.konanTarget in listOf(KonanTarget.MACOS_X64, KonanTarget.LINUX_X64, KonanTarget.MINGW_X64)) {
+            lowerCamelCaseName("run", name, compilation.target.targetName)
+        } else {
+            null
         }
 
     /**
@@ -137,6 +125,56 @@ class Executable constructor(
     val runTask: AbstractExecTask<*>?
         get() = runTaskName?.let { project.tasks.getByName(it) as AbstractExecTask<*> }
 }
+
+class Test internal constructor(
+    name: String,
+    baseName: String,
+    buildType: NativeBuildType,
+    compilation: KotlinNativeCompilation,
+    private val defaultTest: Boolean
+) : NativeBinary(name, baseName, buildType, compilation) {
+
+    constructor(name: String, baseName: String, buildType: NativeBuildType, compilation: KotlinNativeCompilation)
+            : this(name, baseName, buildType, compilation, false)
+
+    override val outputKind: NativeOutputKind
+        get() = NativeOutputKind.TEST
+
+    override var baseName: String
+        get() = super.baseName
+        set(value) {
+            // TODO: May be add a link to the class into the TestTask class? And use it instead of just executable path?
+            super.baseName = value
+            testTask?.executable = outputFile
+        }
+
+    // TODO: Looks like we need to drop creating test tasks along with a test binary.
+    /**
+     * A name of a task executing this test.
+     * Returns null if the test target is not a host one (macosX64, linuxX64 or mingwX64).
+     */
+    val testTaskName: String?
+        get() {
+            // TODO: Extract in a separate method.
+            if (target.konanTarget !in listOf(KonanTarget.MACOS_X64, KonanTarget.LINUX_X64, KonanTarget.MINGW_X64)) {
+                return null
+            }
+
+            return if (defaultTest) {
+                lowerCamelCaseName(compilation.target.targetName, AbstractKotlinTargetConfigurator.testTaskNameSuffix)
+            } else {
+                lowerCamelCaseName(compilation.target.targetName, name)
+            }
+        }
+
+    // TODO: May be make it lateinit and create in the configurator?
+    /**
+     * A task executing this test.
+     */
+    val testTask: KotlinNativeTestTask?
+        get() = testTaskName?.let { project.tasks.getByName(it) as KotlinNativeTestTask }
+}
+
 
 class StaticLibrary(
     name: String,

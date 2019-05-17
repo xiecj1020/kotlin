@@ -22,6 +22,7 @@ import org.gradle.api.tasks.Exec
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.testing.base.plugins.TestingBasePlugin
 import org.jetbrains.kotlin.gradle.dsl.KotlinNativeBinaryContainer
+import org.jetbrains.kotlin.gradle.dsl.KotlinNativeBinaryContainer.Companion.DEFAULT_TEST_BUILD_TYPE
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation.Companion.MAIN_COMPILATION_NAME
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation.Companion.TEST_COMPILATION_NAME
 import org.jetbrains.kotlin.gradle.plugin.mpp.*
@@ -121,44 +122,46 @@ open class KotlinNativeTargetConfigurator(
             destinationDir = binary.outputDirectory
             addCompilerPlugins()
 
-            tasks.maybeCreate(target.artifactsTaskName).dependsOn(this)
-            tasks.maybeCreate(LifecycleBasePlugin.ASSEMBLE_TASK_NAME).dependsOn(this)
+            if (binary !is Test) {
+                tasks.maybeCreate(target.artifactsTaskName).dependsOn(this)
+                tasks.maybeCreate(LifecycleBasePlugin.ASSEMBLE_TASK_NAME).dependsOn(this)
+            }
+        }
+    }
+
+    private fun Project.createTestTask(binary: Test) {
+        val taskName = binary.testTaskName ?: return
+        tasks.create(taskName, KotlinNativeTestTask::class.java).apply {
+            tasks.maybeCreate(LifecycleBasePlugin.CHECK_TASK_NAME).dependsOn(this)
+
+            group = LifecycleBasePlugin.VERIFICATION_GROUP
+            description = "Executes Kotlin/Native unit tests for target ${binary.target.name}."
+
+            enabled = binary.target.konanTarget.isCurrentHost
+
+            executable = binary.outputFile
+            workingDir = project.projectDir.absolutePath
+
+            onlyIf { binary.outputFile.exists() }
+            dependsOn(binary.linkTaskName)
+
+            KotlinTestTask.configureConventions(this)
         }
     }
 
     private fun Project.createRunTask(binary: Executable) {
         val taskName = binary.runTaskName ?: return
+        tasks.create(taskName, Exec::class.java).apply {
+            group = RUN_GROUP
+            description = "Executes Kotlin/Native executable ${binary.name} for target ${binary.target.name}"
 
-        if (binary.isDefaultTestExecutable) {
-            tasks.create(taskName, KotlinNativeTestTask::class.java).apply {
-                tasks.maybeCreate(LifecycleBasePlugin.CHECK_TASK_NAME).dependsOn(this)
+            enabled = binary.target.konanTarget.isCurrentHost
 
-                group = LifecycleBasePlugin.VERIFICATION_GROUP
-                description = "Executes Kotlin/Native unit tests for target ${binary.target.name}."
+            executable = binary.outputFile.absolutePath
+            workingDir = project.projectDir
 
-                enabled = binary.target.konanTarget.isCurrentHost
-
-                executable = binary.outputFile
-                workingDir = project.projectDir.absolutePath
-
-                onlyIf { binary.outputFile.exists() }
-                dependsOn(binary.linkTaskName)
-
-                KotlinTestTask.configureConventions(this)
-            }
-        } else {
-            tasks.create(taskName, Exec::class.java).apply {
-                group = RUN_GROUP
-                description = "Executes Kotlin/Native executable ${binary.name} for target ${binary.target.name}"
-
-                enabled = binary.target.konanTarget.isCurrentHost
-
-                executable = binary.outputFile.absolutePath
-                workingDir = project.projectDir
-
-                onlyIf { binary.outputFile.exists() }
-                dependsOn(binary.linkTaskName)
-            }
+            onlyIf { binary.outputFile.exists() }
+            dependsOn(binary.linkTaskName)
         }
     }
 
@@ -182,7 +185,7 @@ open class KotlinNativeTargetConfigurator(
 
         project.tasks.getByName(compilation.compileAllTaskName).dependsOn(compileTask)
 
-        if (compilation.compilationName == KotlinCompilation.MAIN_COMPILATION_NAME) {
+        if (compilation.compilationName == MAIN_COMPILATION_NAME) {
             project.tasks.getByName(compilation.target.artifactsTaskName).apply {
                 dependsOn(compileTask)
             }
@@ -250,9 +253,9 @@ open class KotlinNativeTargetConfigurator(
     }
 
     override fun configureTest(target: KotlinNativeTarget) {
-        target.binaries.defaultTestExecutable {
-            compilation = target.compilations.maybeCreate(TEST_COMPILATION_NAME)
-        }
+        // TODO: Add constructors with varargs (there was an issue for this)?
+        // Test tasks for all test binaries are created in the [configureBinaries] method.
+        target.binaries.createDefaultTest()
     }
 
     protected fun configureCInterops(target: KotlinNativeTarget): Unit = with(target.project) {
@@ -282,6 +285,10 @@ open class KotlinNativeTargetConfigurator(
 
         target.binaries.withType(Executable::class.java).all {
             project.createRunTask(it)
+        }
+
+        target.binaries.withType(Test::class.java).all {
+            project.createTestTask(it)
         }
 
         target.binaries.prefixGroups.all { prefixGroup ->
