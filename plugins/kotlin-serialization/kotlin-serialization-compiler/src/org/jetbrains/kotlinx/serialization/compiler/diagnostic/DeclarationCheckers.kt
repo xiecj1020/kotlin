@@ -5,58 +5,107 @@
 
 package org.jetbrains.kotlinx.serialization.compiler.diagnostic
 
-import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
-import org.jetbrains.kotlin.diagnostics.SimpleDiagnostic
-import org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages
-import org.jetbrains.kotlin.diagnostics.rendering.DiagnosticFactoryToRendererMap
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.diagnostics.DiagnosticFactory0
 import org.jetbrains.kotlin.diagnostics.reportFromPlugin
+import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.checkers.DeclarationChecker
 import org.jetbrains.kotlin.resolve.checkers.DeclarationCheckerContext
-import org.jetbrains.kotlinx.serialization.compiler.resolve.findSerializableAnnotationDeclaration
-import org.jetbrains.kotlinx.serialization.compiler.resolve.hasCompanionObjectAsSerializer
-import org.jetbrains.kotlinx.serialization.compiler.resolve.hasSerializableAnnotationWithoutArgs
-import org.jetbrains.kotlinx.serialization.compiler.resolve.isInternalSerializable
+import org.jetbrains.kotlin.util.slicedMap.Slices
+import org.jetbrains.kotlin.util.slicedMap.WritableSlice
+import org.jetbrains.kotlinx.serialization.compiler.backend.common.AbstractSerialGenerator
+import org.jetbrains.kotlinx.serialization.compiler.backend.common.findTypeSerializerOrContext
+import org.jetbrains.kotlinx.serialization.compiler.resolve.*
+
+internal val SERIALIZABLE_PROPERTIES: WritableSlice<ClassDescriptor, SerializableProperties> = Slices.createSimpleSlice()
+internal val SERIALIZER_FOR_PROPERTY: WritableSlice<PropertyDescriptor, ClassDescriptor> = Slices.createSimpleSlice()
 
 class SerializationPluginDeclarationChecker : DeclarationChecker {
     override fun check(declaration: KtDeclaration, descriptor: DeclarationDescriptor, context: DeclarationCheckerContext) {
+        if (descriptor !is ClassDescriptor) return
+
         checkCanBeSerializedInternally(descriptor, context.trace)
+        val props = buildSerializableProperties(descriptor, context.trace) ?: return
+        analyzePropertiesSerializers(context.trace, descriptor, props.serializableProperties)
     }
 
-    private fun checkCanBeSerializedInternally(descriptor: DeclarationDescriptor, trace: BindingTrace) {
-        if (descriptor !is ClassDescriptor) return
+    private fun checkCanBeSerializedInternally(descriptor: ClassDescriptor, trace: BindingTrace) {
         if (!descriptor.hasSerializableAnnotationWithoutArgs) return
 
         if (!descriptor.isInternalSerializable && !descriptor.hasCompanionObjectAsSerializer) {
-            trace.safeReport(descriptor.findSerializableAnnotationDeclaration()) {
-                SerializationErrors.SERIALIZABLE_ANNOTATION_IGNORED.on(it)
+            trace.reportOnSerializableAnnotation(descriptor, SerializationErrors.SERIALIZABLE_ANNOTATION_IGNORED)
+        }
+    }
+
+    // todo: also check on a side of external serializer
+    private fun buildSerializableProperties(descriptor: ClassDescriptor, trace: BindingTrace): SerializableProperties? {
+        if (!descriptor.annotations.hasAnnotation(SerializationAnnotations.serializableAnnotationFqName)) return null
+        if (!descriptor.isInternalSerializable) return null
+        if (descriptor.hasCompanionObjectAsSerializer) return null // customized by user
+
+        val props = SerializableProperties(descriptor, trace.bindingContext)
+        if (!props.isExternallySerializable) trace.reportOnSerializableAnnotation(
+            descriptor,
+            SerializationErrors.PRIMARY_CONSTRUCTOR_PARAMETER_IS_NOT_A_PROPERTY
+        )
+
+        // check that all names are unique
+        val namesSet = mutableSetOf<String>()
+        props.serializableProperties.forEach {
+            if (!namesSet.add(it.name)) {
+                descriptor.safeReport { a ->
+                    trace.reportFromPlugin(
+                        SerializationErrors.DUPLICATE_SERIAL_NAME.on(a, it.name),
+                        SerializationPluginErrorsRendering
+                    )
+                }
+            }
+        }
+
+        trace.record(SERIALIZABLE_PROPERTIES, descriptor, props)
+        return props
+    }
+
+    private fun analyzePropertiesSerializers(trace: BindingTrace, serializableClass: ClassDescriptor, props: List<SerializableProperty>) {
+        val generatorContextForAnalysis = object : AbstractSerialGenerator(trace.bindingContext, serializableClass) {}
+        // todo: recursive check for prop type arguments (e.g. List<NonSerializableType>)
+        props.forEach {
+            val serializer = it.serializableWith?.toClassDescriptor ?: generatorContextForAnalysis.findTypeSerializerOrContext(
+                it.module,
+                it.type,
+                it.descriptor.annotations,
+                it.descriptor.findPsi()
+            )
+            if (serializer != null) {
+                trace.record(SERIALIZER_FOR_PROPERTY, it.descriptor, serializer)
+            } else {
+                if (it.genericIndex != null) return@forEach // properties with `T` types do not have dedicated serializers
+                // todo: report only on property type, not on a whole prop for better-looking?
+                val psi = it.descriptor.findPsi() ?: return@forEach
+                trace.reportFromPlugin(
+                    SerializationErrors.SERIALIZER_NOT_FOUND.on(psi),
+                    SerializationPluginErrorsRendering
+                )
             }
         }
     }
 
-    private fun <E : PsiElement> BindingTrace.safeReport(element: E?, reporterFactory: (E) -> SimpleDiagnostic<E>) {
-        element?.let { e ->
+    private inline fun ClassDescriptor.safeReport(report: (KtAnnotationEntry) -> Unit) {
+        findSerializableAnnotationDeclaration()?.let(report)
+    }
+
+    private fun BindingTrace.reportOnSerializableAnnotation(descriptor: ClassDescriptor, error: DiagnosticFactory0<KtAnnotationEntry>) {
+        descriptor.safeReport { e ->
             reportFromPlugin(
-                reporterFactory(e),
+                error.on(e),
                 SerializationPluginErrorsRendering
             )
         }
     }
-}
 
-object SerializationPluginErrorsRendering : DefaultErrorMessages.Extension {
-    private val MAP = DiagnosticFactoryToRendererMap("SerializationPlugin")
-    override fun getMap() = MAP
-
-    init {
-        MAP.put(
-            SerializationErrors.SERIALIZABLE_ANNOTATION_IGNORED,
-            "@Serializable annotation would be ignored because it is impossible to serialize automatically interfaces or enums. " +
-                    "Provide serializer manually via e.g. companion object"
-        )
-    }
 }
