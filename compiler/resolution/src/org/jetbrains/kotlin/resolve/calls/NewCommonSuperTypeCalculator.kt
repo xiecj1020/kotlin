@@ -212,7 +212,12 @@ object NewCommonSuperTypeCalculator {
                 if (thereIsStar || typeProjections.isEmpty()) {
                     createStarProjection(parameter)
                 } else {
-                    calculateArgument(parameter, typeProjections, depth)
+                    val argument = calculateArgument(parameter, typeProjections, depth)
+                    if (argument.getVariance() == TypeVariance.OUT && argument.getType().typeConstructor() == constructor) {
+                        createStarProjection(parameter)
+                    } else {
+                        argument
+                    }
                 }
 
             arguments.add(argument)
