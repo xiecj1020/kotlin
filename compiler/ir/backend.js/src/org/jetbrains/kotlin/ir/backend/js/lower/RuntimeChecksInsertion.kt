@@ -110,11 +110,20 @@ class RuntimeChecksInsertion(val context: JsIrBackendContext) : FileLoweringPass
         // Enum constructor calls pretend to return Unit.
         if (expression is IrEnumConstructorCall ||
             expression is IrDelegatingConstructorCall ||
-            expression is IrInstanceInitializerCall)
+            expression is IrInstanceInitializerCall
+        )
             return expression
 
         // For primitive companions
         if (typeClass.isCompanion) return expression
+
+        // Temporary aborts checks
+
+        if (type.isUnit() || type.isNullableAny())
+            return expression
+
+        if (expression is IrConst<*>)
+            return expression
 
         if (expression.canHaveSideEffects()) {
             val tmp = JsIrBuilder.buildVar(type, null, name = "tc$$count", initializer = expression)
