@@ -22,6 +22,13 @@ fun returnsNotNull(condition: Boolean) {
     }
 }
 
+fun Any?.receiverIsNotNull(): Boolean {
+    contract {
+        returns(true) implies (this@receiverIsNotNull != null)
+    }
+    return this != null
+}
+
 inline fun callsInPlaceAtMostOnce(block: () -> Unit) {
     contract {
         callsInPlace(block, InvocationKind.AT_MOST_ONCE)

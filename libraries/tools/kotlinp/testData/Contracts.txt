@@ -55,6 +55,12 @@ package {
     contract {
       returns(true) implies (p#1)
     }
+
+  // signature: receiverIsNotNull(Ljava/lang/Object;)Z
+  public final fun kotlin/Any?.receiverIsNotNull(): kotlin/Boolean
+    contract {
+      returns(true) implies (p#0 != null)
+    }
 }
 // META-INF/test-module.kotlin_module
 // ------------------------------------------
