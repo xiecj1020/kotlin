@@ -41,20 +41,14 @@ class RuntimeChecksInsertion(val context: JsIrBackendContext) : FileLoweringPass
             override fun visitFunction(declaration: IrFunction): IrStatement {
                 if (declaration.hasAnnotation(context.intrinsics.doNotIntrinsifyAnnotationSymbol))
                     return declaration
-
-                if (declaration is IrSimpleFunction && declaration.isTailrec) {
-                    // IrJsCodegenBoxTestGenerated.Coroutines.FeatureIntersection.Tailrec#testSum_1_3
-                    // IrJsCodegenBoxTestGenerated.Diagnostics.Functions.TailRecursion#testSum
+                if (declaration.symbol == context.intrinsics.typeCheckIntrinsic)
                     return declaration
-                }
 
-                if (declaration.symbol == context.intrinsics.typeCheckIntrinsic) {
-                    return declaration
-                }
-
-                // Some call stack problems
-                if (declaration is IrConstructor)
-                    return declaration
+//                if (declaration is IrSimpleFunction && declaration.isTailrec) {
+//                    // IrJsCodegenBoxTestGenerated.Coroutines.FeatureIntersection.Tailrec#testSum_1_3
+//                    // IrJsCodegenBoxTestGenerated.Diagnostics.Functions.TailRecursion#testSum
+//                    return declaration
+//                }
 
                 return super.visitFunction(declaration)
             }
@@ -66,8 +60,9 @@ class RuntimeChecksInsertion(val context: JsIrBackendContext) : FileLoweringPass
 
                 if (expression is IrCall) {
                     val function: IrFunction = expression.symbol.owner
-
                     val fqName = function.fqNameWhenAvailable
+
+                    // String literal of 'js' function cannot be separated
                     if (fqName == FqName("kotlin.js.js")) {
                         return expression
                     }
@@ -113,7 +108,9 @@ class RuntimeChecksInsertion(val context: JsIrBackendContext) : FileLoweringPass
             return expression
 
         // Enum constructor calls pretend to return Unit.
-        if (expression is IrEnumConstructorCall)
+        if (expression is IrEnumConstructorCall ||
+            expression is IrDelegatingConstructorCall ||
+            expression is IrInstanceInitializerCall)
             return expression
 
         // For primitive companions

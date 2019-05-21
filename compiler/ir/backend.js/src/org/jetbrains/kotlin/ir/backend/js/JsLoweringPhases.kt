@@ -372,9 +372,9 @@ val jsPhases = namedIrModulePhase(
             expectDeclarationsRemovingPhase then
             arrayConstructorPhase then
             functionInliningPhase then
-            insertRuntimeTypeChecks then
             lateinitLoweringPhase then
             tailrecLoweringPhase then
+            insertRuntimeTypeChecks then
             enumClassConstructorLoweringPhase then
             sharedVariablesLoweringPhase then
             localDelegatedPropertiesLoweringPhase then
