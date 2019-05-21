@@ -5,7 +5,10 @@
 
 package org.jetbrains.kotlin.tools
 
-import kotlinx.metadata.*
+import kotlinx.metadata.Flag
+import kotlinx.metadata.Flags
+import kotlinx.metadata.KmDeclarationContainer
+import kotlinx.metadata.flagsOf
 import kotlinx.metadata.jvm.*
 import org.objectweb.asm.tree.ClassNode
 
@@ -47,7 +50,7 @@ fun KotlinClassMetadata.toClassVisibility(classNode: ClassNode): ClassVisibility
 
     val container: KmDeclarationContainer? = when (this) {
         is KotlinClassMetadata.Class ->
-            KmClass().apply(this::accept).also { klass ->
+            toKmClass().also { klass ->
                 flags = klass.flags
 
                 for (constructor in klass.constructors) {
@@ -55,9 +58,9 @@ fun KotlinClassMetadata.toClassVisibility(classNode: ClassNode): ClassVisibility
                 }
             }
         is KotlinClassMetadata.FileFacade ->
-            KmPackage().apply(this::accept)
+            toKmPackage()
         is KotlinClassMetadata.MultiFileClassPart ->
-            KmPackage().apply(this::accept).also { _facadeClassName = this.facadeClassName }
+            toKmPackage().also { _facadeClassName = this.facadeClassName }
         else -> null
     }
 
