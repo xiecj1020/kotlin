@@ -110,6 +110,7 @@ private class SurroundSuspendParameterCallsWithSuspendMarkersMethodVisitor(
         }
 
         FixStackMethodTransformer().transform(thisName, methodNode)
+        updateMaxStack(methodNode)
 
         val sourceFrames = MethodTransformer.analyze(thisName, methodNode, SourceInterpreter())
 

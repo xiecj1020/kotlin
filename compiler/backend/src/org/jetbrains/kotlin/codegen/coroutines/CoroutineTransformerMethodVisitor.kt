@@ -384,20 +384,6 @@ class CoroutineTransformerMethodVisitor(
             )
     }
 
-    private fun updateMaxStack(methodNode: MethodNode) {
-        methodNode.instructions.resetLabels()
-        methodNode.accept(
-            MaxStackFrameSizeAndLocalsCalculator(
-                Opcodes.API_VERSION, methodNode.access, methodNode.desc,
-                object : MethodVisitor(Opcodes.API_VERSION) {
-                    override fun visitMaxs(maxStack: Int, maxLocals: Int) {
-                        methodNode.maxStack = maxStack
-                    }
-                }
-            )
-        )
-    }
-
     private fun prepareMethodNodePreludeForNamedFunction(methodNode: MethodNode) {
         val objectTypeForState = Type.getObjectType(classBuilderForCoroutineState.thisName)
         val continuationArgumentIndex = getLastParameterIndex(methodNode.desc, methodNode.access)
@@ -1044,4 +1030,18 @@ internal fun replaceFakeContinuationsWithRealOnes(methodNode: MethodNode, contin
         methodNode.instructions.removeAll(listOf(fakeContinuation.previous.previous, fakeContinuation.previous))
         methodNode.instructions.set(fakeContinuation, VarInsnNode(Opcodes.ALOAD, continuationIndex))
     }
+}
+
+internal fun updateMaxStack(methodNode: MethodNode) {
+    methodNode.instructions.resetLabels()
+    methodNode.accept(
+        MaxStackFrameSizeAndLocalsCalculator(
+            Opcodes.API_VERSION, methodNode.access, methodNode.desc,
+            object : MethodVisitor(Opcodes.API_VERSION) {
+                override fun visitMaxs(maxStack: Int, maxLocals: Int) {
+                    methodNode.maxStack = maxStack
+                }
+            }
+        )
+    )
 }

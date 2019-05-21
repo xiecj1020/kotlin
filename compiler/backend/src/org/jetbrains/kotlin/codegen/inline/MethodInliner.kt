@@ -8,6 +8,7 @@ package org.jetbrains.kotlin.codegen.inline
 import org.jetbrains.kotlin.codegen.*
 import org.jetbrains.kotlin.codegen.coroutines.continuationAsmType
 import org.jetbrains.kotlin.codegen.coroutines.getOrCreateJvmSuspendFunctionView
+import org.jetbrains.kotlin.codegen.coroutines.updateMaxStack
 import org.jetbrains.kotlin.codegen.inline.FieldRemapper.Companion.foldName
 import org.jetbrains.kotlin.codegen.inline.coroutines.*
 import org.jetbrains.kotlin.codegen.intrinsics.IntrinsicMethods
@@ -398,6 +399,7 @@ class MethodInliner(
         if (markers.isEmpty()) return node
         val invokes = markers.map { it.next as MethodInsnNode }
         node.instructions.removeAll(markers)
+        updateMaxStack(node)
 
         val sourceFrames = MethodTransformer.analyze(inlineCallSiteInfo.ownerClassName, node, SourceInterpreter())
         val toSurround = invokes.mapNotNull { insn ->
