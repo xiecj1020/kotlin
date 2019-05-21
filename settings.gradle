@@ -207,17 +207,15 @@ include ":kotlin-build-common",
         ":kotlin-serialization",
         ":kotlin-serialization-unshaded"
 
-
-def includeCidr = hasProperty("cidrPluginsEnabled") && Boolean.parseBoolean(cidrPluginsEnabled)
-if (includeCidr) {
+def includeKotlinUltimate = hasProperty("kotlinUltimateEnabled") && Boolean.parseBoolean(kotlinUltimateEnabled) && file("kotlin-ultimate").exists()
+if (includeKotlinUltimate) {
     logger.info("Including :kotlin-ultimate in settings.gradle")
-    includeBuild "kotlin-ultimate/buildSrc"
     include ":kotlin-ultimate:ide:cidr-native",
-            ":kotlin-ultimate:ide:appcode-native",
             ":kotlin-ultimate:ide:clion-native",
+            ":kotlin-ultimate:ide:appcode-native",
             ":kotlin-ultimate:prepare:cidr-plugin",
-            ":kotlin-ultimate:prepare:appcode-plugin",
-            ":kotlin-ultimate:prepare:clion-plugin"
+            ":kotlin-ultimate:prepare:clion-plugin",
+            ":kotlin-ultimate:prepare:appcode-plugin"
 } else {
     logger.info("NOT including :kotlin-ultimate in settings.gradle")
 }

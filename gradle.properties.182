@@ -11,4 +11,4 @@ kotlin.compiler.newInferenceEnabled=true
 
 #jpsBuild=true
 
-kotlinUltimateEnabled=true
+#kotlinUltimateEnabled=true
