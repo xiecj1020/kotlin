@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrVariableSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrVariableSymbolImpl
 import org.jetbrains.kotlin.ir.types.IrType
+import org.jetbrains.kotlin.ir.types.makeNullable
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformer
 import org.jetbrains.kotlin.ir.visitors.IrElementVisitor
 import org.jetbrains.kotlin.name.Name
@@ -33,13 +34,19 @@ class IrVariableImpl(
     origin: IrDeclarationOrigin,
     override val symbol: IrVariableSymbol,
     override val name: Name,
-    override val type: IrType,
+    type: IrType,
     override val isVar: Boolean,
     override val isConst: Boolean,
     override val isLateinit: Boolean
 ) :
     IrDeclarationBase(startOffset, endOffset, origin),
     IrVariable {
+
+    override val type: IrType = if (isLateinit) {
+        type.makeNullable()
+    } else {
+        type
+    }
 
     constructor(
         startOffset: Int,
