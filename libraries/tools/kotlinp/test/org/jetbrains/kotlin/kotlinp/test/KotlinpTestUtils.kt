@@ -7,10 +7,6 @@ package org.jetbrains.kotlin.kotlinp.test
 
 import com.intellij.openapi.Disposable
 import junit.framework.TestCase.assertEquals
-import kotlinx.metadata.KmClass
-import kotlinx.metadata.KmLambda
-import kotlinx.metadata.KmPackage
-import kotlinx.metadata.jvm.KmModule
 import kotlinx.metadata.jvm.KotlinClassMetadata
 import kotlinx.metadata.jvm.KotlinModuleMetadata
 import org.jetbrains.kotlin.checkers.setupLanguageVersionSettingsForCompilerTests
@@ -118,24 +114,13 @@ private fun transformClassFileWithReadWriteVisitors(classFile: KotlinClassMetada
 private fun transformClassFileWithNodes(classFile: KotlinClassMetadata): KotlinClassMetadata =
     when (classFile) {
         is KotlinClassMetadata.Class ->
-            KotlinClassMetadata.Class.Writer().apply(
-                KmClass().apply(classFile::accept)::accept
-            ).write()
+            KotlinClassMetadata.Class.Writer().apply(classFile.toKmClass()::accept).write()
         is KotlinClassMetadata.FileFacade ->
-            KotlinClassMetadata.FileFacade.Writer().apply(
-                KmPackage().apply(classFile::accept)::accept
-            ).write()
-        is KotlinClassMetadata.SyntheticClass -> {
-            val writer = KotlinClassMetadata.SyntheticClass.Writer()
-            if (classFile.isLambda) {
-                KmLambda().apply(classFile::accept).accept(writer)
-            }
-            writer.write()
-        }
+            KotlinClassMetadata.FileFacade.Writer().apply(classFile.toKmPackage()::accept).write()
+        is KotlinClassMetadata.SyntheticClass ->
+            KotlinClassMetadata.SyntheticClass.Writer().apply { classFile.toKmLambda()?.accept(this) }.write()
         is KotlinClassMetadata.MultiFileClassPart ->
-            KotlinClassMetadata.MultiFileClassPart.Writer().apply(
-                KmPackage().apply(classFile::accept)::accept
-            ).write(classFile.facadeClassName)
+            KotlinClassMetadata.MultiFileClassPart.Writer().apply(classFile.toKmPackage()::accept).write(classFile.facadeClassName)
         else -> classFile
     }
 
@@ -143,4 +128,4 @@ private fun transformModuleFileWithReadWriteVisitors(moduleFile: KotlinModuleMet
     KotlinModuleMetadata.Writer().apply(moduleFile::accept).write()
 
 private fun transformModuleFileWithNodes(moduleFile: KotlinModuleMetadata): KotlinModuleMetadata =
-    KotlinModuleMetadata.Writer().apply(KmModule().apply(moduleFile::accept)::accept).write()
+    KotlinModuleMetadata.Writer().apply(moduleFile.toKmModule()::accept).write()

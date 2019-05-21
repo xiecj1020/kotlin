@@ -29,6 +29,12 @@ class KotlinModuleMetadata(@Suppress("CanBeParameter", "MemberVisibilityCanBePri
     }
 
     /**
+     * Visits metadata of this module with a new [KmModule] instance and returns that instance.
+     */
+    fun toKmModule(): KmModule =
+        KmModule().apply(this::accept)
+
+    /**
      * A [KmModuleVisitor] that generates the metadata of a Kotlin JVM module file.
      */
     class Writer : KmModuleVisitor() {
