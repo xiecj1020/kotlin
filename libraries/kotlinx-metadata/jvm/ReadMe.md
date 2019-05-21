@@ -58,11 +58,10 @@ when (metadata) {
 }
 ```
 
-Let's assume we've obtained an instance of `KotlinClassMetadata.Class`; other kinds of classes are handled similarly, except some of them have metadata in a slightly different form. The main way to make sense of the underlying metadata is to invoke `accept`, passing an instance of [`KmClassVisitor`](../src/kotlinx/metadata/visitors.kt) to handle the incoming information (`Km` is a shorthand for “Kotlin metadata”). The simplest `KmClassVisitor` implementation is `KmClass`. After calling `accept`, all the data is available in its fields:
+Let's assume we've obtained an instance of `KotlinClassMetadata.Class`; other kinds of classes are handled similarly, except some of them have metadata in a slightly different form. The main way to make sense of the underlying metadata is to invoke `toKmClass`, which returns an instance of `KmClass` (`Km` is a shorthand for “Kotlin metadata”):
 
 ```kotlin
-val klass = KmClass()
-metadata.accept(klass)
+val klass = metadata.toKmClass()
 println(klass.functions.map { it.name })
 println(klass.properties.map { it.name })
 ```
@@ -123,7 +122,7 @@ Similarly to how `KotlinClassMetadata` is used to read/write metadata of Kotlin 
 // Read the module metadata
 val bytes = File("META-INF/main.kotlin_module").readBytes()
 val metadata = KotlinModuleMetadata.read(bytes)
-val module = KmModule().apply(metadata::accept)
+val module = metadata.toKmModule()
 ...
 
 // Write the module metadata
@@ -133,14 +132,14 @@ File("META-INF/main.kotlin_module").writeBytes(bytes)
 
 ## Laziness
 
-Note that until you invoke `accept` on a `KotlinClassMetadata` or `KotlinModuleMetadata` instance, the data is not completely parsed and verified. If you need to check if the data is not horribly corrupted before proceeding, make sure to call `accept`:
+Note that until you load the actual underlying data of a `KotlinClassMetadata` or `KotlinModuleMetadata` instance by invoking `accept` or one of the `toKm...` methods, the data is not completely parsed and verified. If you need to check if the data is not horribly corrupted before proceeding, ensure that either of those is called:
 
 ```kotlin
 val metadata: KotlinClassMetadata.Class = ...
 
 try {
     // Guarantees eager parsing of the underlying data
-    metadata.accept(KmClass())
+    metadata.toKmClass()
 } catch (e: Exception) {
     System.err.println("Metadata is corrupted!")
 }

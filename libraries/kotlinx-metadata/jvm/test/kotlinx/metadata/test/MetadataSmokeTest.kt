@@ -32,9 +32,8 @@ class MetadataSmokeTest {
         }
 
         val classMetadata = KotlinClassMetadata.read(L::class.java.readMetadata()) as KotlinClassMetadata.Class
-        val klass = KmClass().apply(classMetadata::accept)
 
-        val inlineFunctions = klass.functions
+        val inlineFunctions = classMetadata.toKmClass().functions
             .filter { Flag.Function.IS_INLINE(it.flags) }
             .mapNotNull { it.signature?.asString() }
 
