@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.utils.addIfNotNull
 class SubstitutingFunctor(
     private val basicEffects: List<ESEffect>,
     private val ownerFunction: FunctionDescriptor
-) : Functor() {
+) : AbstractFunctor() {
     override fun doInvocation(arguments: List<Computation>, reducer: Reducer): List<ESEffect> {
         if (basicEffects.isEmpty()) return emptyList()
 

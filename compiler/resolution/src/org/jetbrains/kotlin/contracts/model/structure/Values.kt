@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.contracts.model.ESExpression
 import org.jetbrains.kotlin.contracts.model.ESExpressionVisitor
 import org.jetbrains.kotlin.contracts.model.ESValue
 import org.jetbrains.kotlin.descriptors.ValueDescriptor
-import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import java.util.*
 
@@ -56,7 +55,7 @@ open class ESReceiverValue(override val receiverValue: ReceiverValue) : Abstract
  *
  * [ESVariable] at points 2 and 3 must has consistent equality according to using them as keys
  */
-open class ESVariable(val descriptor: ValueDescriptor) : AbstractESValue(descriptor.type.toESType(descriptor.builtIns)) {
+open class ESVariable(val descriptor: ValueDescriptor) : AbstractESValue(descriptor.type.toESType()) {
     override fun <T> accept(visitor: ESExpressionVisitor<T>): T = visitor.visitVariable(this)
 
     override fun equals(other: Any?): Boolean {

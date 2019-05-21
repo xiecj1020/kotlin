@@ -26,8 +26,13 @@ import org.jetbrains.kotlin.contracts.model.visitors.Reducer
  * to call of corresponding function, but instead of taking values and returning
  * values, it takes effects and returns effects.
  */
-abstract class Functor {
-    fun invokeWithArguments(arguments: List<Computation>, reducer: Reducer): List<ESEffect> =
+interface Functor {
+    fun invokeWithArguments(arguments: List<Computation>, reducer: Reducer): List<ESEffect>
+}
+
+
+abstract class AbstractFunctor : Functor {
+    override fun invokeWithArguments(arguments: List<Computation>, reducer: Reducer): List<ESEffect> =
         reducer.reduceEffects(doInvocation(arguments, reducer))
 
     protected abstract fun doInvocation(arguments: List<Computation>, reducer: Reducer): List<ESEffect>

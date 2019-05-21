@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.contracts.description.expressions.*
 import org.jetbrains.kotlin.contracts.model.ESExpression
 import org.jetbrains.kotlin.contracts.model.functors.IsFunctor
 import org.jetbrains.kotlin.contracts.model.structure.*
-import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
 
 internal class ConditionInterpreter(
     private val dispatcher: ContractInterpretationDispatcher
@@ -45,7 +44,7 @@ internal class ConditionInterpreter(
 
     override fun visitIsInstancePredicate(isInstancePredicate: IsInstancePredicate, data: Unit): ESExpression? {
         val esVariable = dispatcher.interpretVariable(isInstancePredicate.arg) ?: return null
-        return ESIs(esVariable, IsFunctor(isInstancePredicate.type.toESType(esVariable.descriptor.builtIns), isInstancePredicate.isNegated))
+        return ESIs(esVariable, IsFunctor(isInstancePredicate.type.toESType(), isInstancePredicate.isNegated))
     }
 
     override fun visitIsNullPredicate(isNullPredicate: IsNullPredicate, data: Unit): ESExpression? {

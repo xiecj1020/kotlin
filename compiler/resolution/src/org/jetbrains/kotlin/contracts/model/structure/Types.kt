@@ -39,12 +39,12 @@ class ESKotlinType(val type: KotlinType) : ESType() {
 }
 
 
-fun KotlinType.toESType(builtIns: KotlinBuiltIns) = when (this) {
-    builtIns.booleanType -> ESBooleanType
-    builtIns.anyType -> ESNullableAnyType
-    builtIns.nullableAnyType -> ESAnyType
-    builtIns.nothingType -> ESNothingType
-    builtIns.nullableNothingType -> ESNullableNothingType
+fun KotlinType.toESType() = when {
+    KotlinBuiltIns.isBoolean(this) -> ESBooleanType
+    KotlinBuiltIns.isAny(this) -> ESAnyType
+    KotlinBuiltIns.isNullableAny(this) -> ESNullableAnyType
+    KotlinBuiltIns.isNothing(this) -> ESNothingType
+    KotlinBuiltIns.isNullableNothing(this) -> ESNullableNothingType
     else -> ESKotlinType(this)
 }
 

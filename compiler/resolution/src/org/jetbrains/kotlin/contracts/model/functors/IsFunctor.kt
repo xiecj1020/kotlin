@@ -23,7 +23,7 @@ import org.jetbrains.kotlin.contracts.model.structure.ESReturns
 import org.jetbrains.kotlin.contracts.model.structure.ESType
 import org.jetbrains.kotlin.contracts.model.visitors.Reducer
 
-class IsFunctor(val type: ESType, val isNegated: Boolean) : Functor() {
+class IsFunctor(val type: ESType, val isNegated: Boolean) : AbstractFunctor() {
     override fun doInvocation(arguments: List<Computation>, reducer: Reducer): List<ESEffect> {
         assert(arguments.size == 1) { "Wrong size of arguments list for Unary operator: expected 1, got ${arguments.size}" }
         return invokeWithArguments(arguments[0])

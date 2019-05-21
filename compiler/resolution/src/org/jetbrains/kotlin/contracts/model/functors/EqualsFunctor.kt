@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.contracts.model.*
 import org.jetbrains.kotlin.contracts.model.structure.*
 import org.jetbrains.kotlin.contracts.model.visitors.Reducer
 
-class EqualsFunctor(val isNegated: Boolean) : Functor() {
+class EqualsFunctor(val isNegated: Boolean) : AbstractFunctor() {
     /*
         Equals is a bit tricky case to produce clauses, because e.g. if we want to emit "Returns(true)"-clause,
         then we have to guarantee that we know *all* cases when 'true' could've been returned, and join

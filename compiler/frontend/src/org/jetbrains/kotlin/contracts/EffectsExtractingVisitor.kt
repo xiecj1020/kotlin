@@ -83,7 +83,7 @@ class EffectsExtractingVisitor(
                 (element as KtExpression).createDataFlowValue() ?: return UNKNOWN_COMPUTATION
             )
             descriptor is FunctionDescriptor -> {
-                val esType = descriptor.returnType?.toESType(builtIns)
+                val esType = descriptor.returnType?.toESType()
                 CallComputation(
                     esType,
                     descriptor.getFunctor()?.invokeWithArguments(arguments, reducer) ?: emptyList()
@@ -119,7 +119,7 @@ class EffectsExtractingVisitor(
     }
 
     override fun visitIsExpression(expression: KtIsExpression, data: Unit): Computation {
-        val rightType = trace[BindingContext.TYPE, expression.typeReference]?.toESType(builtIns) ?: return UNKNOWN_COMPUTATION
+        val rightType = trace[BindingContext.TYPE, expression.typeReference]?.toESType() ?: return UNKNOWN_COMPUTATION
         val arg = extractOrGetCached(expression.leftHandSide)
         return CallComputation(
             ESBooleanType,
