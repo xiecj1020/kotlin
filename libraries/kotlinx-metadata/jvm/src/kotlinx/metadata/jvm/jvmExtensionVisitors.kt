@@ -193,7 +193,7 @@ open class JvmPropertyExtensionVisitor @JvmOverloads constructor(
         level = DeprecationLevel.ERROR,
         replaceWith = ReplaceWith("visit(flagsOf(), fieldSignature, getterSignature, setterSignature)", "kotlinx.metadata.flagsOf")
     )
-    open fun visit(
+    fun visit(
         fieldSignature: JvmFieldSignature?,
         getterSignature: JvmMethodSignature?,
         setterSignature: JvmMethodSignature?
