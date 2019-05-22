@@ -11,12 +11,8 @@ import org.jetbrains.kotlin.backend.common.FileLoweringPass
 import org.jetbrains.kotlin.backend.common.FunctionLoweringPass
 import org.jetbrains.kotlin.backend.common.descriptors.WrappedClassConstructorDescriptor
 import org.jetbrains.kotlin.backend.common.descriptors.WrappedSimpleFunctionDescriptor
-import org.jetbrains.kotlin.backend.common.descriptors.WrappedValueParameterDescriptor
 import org.jetbrains.kotlin.backend.common.descriptors.synthesizedName
-import org.jetbrains.kotlin.backend.common.ir.copyTo
-import org.jetbrains.kotlin.backend.common.ir.copyTypeParametersFrom
-import org.jetbrains.kotlin.backend.common.ir.ir2string
-import org.jetbrains.kotlin.backend.common.ir.passTypeArgumentsFrom
+import org.jetbrains.kotlin.backend.common.ir.*
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
@@ -24,14 +20,12 @@ import org.jetbrains.kotlin.ir.builders.*
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.impl.IrConstructorImpl
 import org.jetbrains.kotlin.ir.declarations.impl.IrFunctionImpl
-import org.jetbrains.kotlin.ir.declarations.impl.IrValueParameterImpl
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.expressions.impl.*
 import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
 import org.jetbrains.kotlin.ir.symbols.IrFunctionSymbol
 import org.jetbrains.kotlin.ir.symbols.impl.IrConstructorSymbolImpl
 import org.jetbrains.kotlin.ir.symbols.impl.IrSimpleFunctionSymbolImpl
-import org.jetbrains.kotlin.ir.symbols.impl.IrValueParameterSymbolImpl
 import org.jetbrains.kotlin.ir.types.*
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -516,26 +510,6 @@ private fun IrFunction.generateDefaultsFunction(
     context.ir.defaultParameterDeclarationsCache.getOrPut(this) {
         generateDefaultsFunctionImpl(context, origin, skipInlineMethods, skipExternalMethods)
     }
-
-private fun IrFunction.valueParameter(index: Int, name: Name, type: IrType): IrValueParameter {
-    val parameterDescriptor = WrappedValueParameterDescriptor()
-
-    return IrValueParameterImpl(
-        startOffset,
-        endOffset,
-        IrDeclarationOrigin.DEFINED,
-        IrValueParameterSymbolImpl(parameterDescriptor),
-        name,
-        index,
-        type,
-        null,
-        false,
-        false
-    ).also {
-        parameterDescriptor.bind(it)
-        it.parent = this
-    }
-}
 
 internal val kConstructorMarkerName = "marker".synthesizedName
 

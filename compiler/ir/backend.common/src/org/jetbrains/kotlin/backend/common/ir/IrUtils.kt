@@ -484,4 +484,24 @@ fun IrClass.addFakeOverrides() {
 }
 
 fun IrValueParameter.isInlineParameter() =
-    !isNoinline && !type.isNullable() && type.isFunctionOrKFunction()
+    !isNoinline && !type.isNullable() && (type.isFunction() || type.isSuspendFunctionTypeOrSubtype())
+
+fun IrFunction.valueParameter(index: Int, name: Name, type: IrType): IrValueParameter {
+    val parameterDescriptor = WrappedValueParameterDescriptor()
+
+    return IrValueParameterImpl(
+        startOffset,
+        endOffset,
+        IrDeclarationOrigin.DEFINED,
+        IrValueParameterSymbolImpl(parameterDescriptor),
+        name,
+        index,
+        type,
+        null,
+        false,
+        false
+    ).also {
+        parameterDescriptor.bind(it)
+        it.parent = this
+    }
+}

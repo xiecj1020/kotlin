@@ -689,14 +689,39 @@ public class BytecodeTextTestGenerated extends AbstractBytecodeTextTest {
             KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/codegen/bytecodeText/callableReference"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.JVM, true);
         }
 
-        @TestMetadata("inline.kt")
-        public void testInline() throws Exception {
-            runTest("compiler/testData/codegen/bytecodeText/callableReference/inline.kt");
+        @TestMetadata("boundFieldRefereneInInline.kt")
+        public void testBoundFieldRefereneInInline() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/callableReference/boundFieldRefereneInInline.kt");
+        }
+
+        @TestMetadata("boundFunRefereneInInline.kt")
+        public void testBoundFunRefereneInInline() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/callableReference/boundFunRefereneInInline.kt");
+        }
+
+        @TestMetadata("boundPropertyRefereneInInline.kt")
+        public void testBoundPropertyRefereneInInline() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/callableReference/boundPropertyRefereneInInline.kt");
         }
 
         @TestMetadata("nameIntrinsicWithImplicitThis.kt")
         public void testNameIntrinsicWithImplicitThis() throws Exception {
             runTest("compiler/testData/codegen/bytecodeText/callableReference/nameIntrinsicWithImplicitThis.kt");
+        }
+
+        @TestMetadata("unboundFieldRefereneInInline.kt")
+        public void testUnboundFieldRefereneInInline() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/callableReference/unboundFieldRefereneInInline.kt");
+        }
+
+        @TestMetadata("unboundFunRefereneInInline.kt")
+        public void testUnboundFunRefereneInInline() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/callableReference/unboundFunRefereneInInline.kt");
+        }
+
+        @TestMetadata("unboundPropertyRefereneInInline.kt")
+        public void testUnboundPropertyRefereneInInline() throws Exception {
+            runTest("compiler/testData/codegen/bytecodeText/callableReference/unboundPropertyRefereneInInline.kt");
         }
     }
 
