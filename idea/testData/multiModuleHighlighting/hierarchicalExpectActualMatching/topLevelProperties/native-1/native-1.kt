@@ -1,8 +1,8 @@
 package sample
 
-actual val <T> T.x1 by lazy { 10 <!UNCHECKED_CAST("Int", "T")!>as T<!> }
+actual val <T> T.x1 get() = 10 <!UNCHECKED_CAST("Int", "T")!>as T<!>
 
-actual val x1: List<Int> get() = listOf(1)
+actual val x1: List<Int> get() = null <!CAST_NEVER_SUCCEEDS!>as<!> List<Int>
 
 actual val x2: Nothing = null!!
 
@@ -30,8 +30,4 @@ actual inline var <T> T.x8
     get() = object : I {}
     set(<!UNUSED_PARAMETER("value")!>value<!>) {}
 
-class Case9 : I {}
-
-actual val <!ACTUAL_WITHOUT_EXPECT("Actual property 'x9'", " The following declaration is incompatible because return type is different:     public expect val x9: I ")!>x9<!> = Case9()
-
-actual val <!ACTUAL_WITHOUT_EXPECT("Actual property 'x10'", " The following declaration is incompatible because return type is different:     public expect val x10: Number ")!>x10<!> = 10
+actual val x9 = object: I {}
