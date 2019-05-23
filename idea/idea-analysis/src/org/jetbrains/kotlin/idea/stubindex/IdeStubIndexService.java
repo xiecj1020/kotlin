@@ -98,7 +98,8 @@ public class IdeStubIndexService extends StubIndexService {
             @NotNull IndexSink sink,
             String shortName,
             FqName fqName,
-            boolean level) {
+            boolean level
+    ) {
         if (shortName != null) {
             sink.occurrence(KotlinClassShortNameIndex.getInstance().getKey(), shortName);
         }
@@ -148,7 +149,11 @@ public class IdeStubIndexService extends StubIndexService {
             }
 
             if (stub.mayHaveContract()) {
-                sink.occurrence(KotlinProbablyContractedFunctionShortNameIndex.getInstance().getKey(), name);
+                KotlinProbablyContractedFunctionShortNameIndex contractedFunctionShortNameIndex =
+                        KotlinProbablyContractedFunctionShortNameIndex.getInstance();
+
+                contractedFunctionShortNameIndex.incTracker();
+                sink.occurrence(contractedFunctionShortNameIndex.getKey(), name);
             }
         }
 

@@ -15,9 +15,17 @@ import org.jetbrains.kotlin.resolve.lazy.ProbablyContractedCallableNames
 class ProbablyContractedCallableNamesImpl(project: Project) : ProbablyContractedCallableNames {
     private val functionNames = CachedValuesManager.getManager(project).createCachedValue(
         {
+            val contractedFunctionShortNameIndex = KotlinProbablyContractedFunctionShortNameIndex.getInstance()
+
+            println(
+                "ProbablyContractedCallableNamesImpl: " +
+                        contractedFunctionShortNameIndex.tracker.modificationCount + " " +
+                        Thread.currentThread().id
+            )
+
             CachedValueProvider.Result.create(
-                KotlinProbablyContractedFunctionShortNameIndex.getInstance().getAllKeys(project),
-                PsiModificationTracker.OUT_OF_CODE_BLOCK_MODIFICATION_COUNT
+                contractedFunctionShortNameIndex.getAllKeys(project),
+                contractedFunctionShortNameIndex.tracker
             )
         },
         false

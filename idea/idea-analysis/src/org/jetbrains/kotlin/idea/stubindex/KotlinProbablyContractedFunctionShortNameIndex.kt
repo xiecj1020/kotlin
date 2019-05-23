@@ -6,6 +6,8 @@
 package org.jetbrains.kotlin.idea.stubindex
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.ModificationTracker
+import com.intellij.openapi.util.SimpleModificationTracker
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.stubs.StringStubIndexExtension
 import com.intellij.psi.stubs.StubIndex
@@ -18,6 +20,9 @@ class KotlinProbablyContractedFunctionShortNameIndex : StringStubIndexExtension<
     override fun get(name: String, project: Project, scope: GlobalSearchScope): MutableCollection<KtNamedFunction> =
         StubIndex.getElements(KEY, name, project, scope, KtNamedFunction::class.java)
 
+    val tracker: ModificationTracker = occurrenceTracker
+    fun incTracker() = occurrenceTracker.incModificationCount()
+
     companion object {
         private val KEY: StubIndexKey<String, KtNamedFunction> =
             KotlinIndexUtil.createIndexKey(KotlinProbablyContractedFunctionShortNameIndex::class.java)
@@ -26,5 +31,7 @@ class KotlinProbablyContractedFunctionShortNameIndex : StringStubIndexExtension<
 
         @JvmStatic
         fun getInstance(): KotlinProbablyContractedFunctionShortNameIndex = ourInstance
+
+        private val occurrenceTracker = SimpleModificationTracker()
     }
 }
