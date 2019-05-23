@@ -16,7 +16,7 @@ public abstract class LongReadingClock : Clock {
 
     override fun mark(): ClockMark = object : ClockMark {
         val startedAt = reading()
-        override fun elapsed(): Duration = Duration(reading() - startedAt, this@LongReadingClock.unit)
+        override fun elapsed(): Duration = (reading() - startedAt).toDuration(this@LongReadingClock.unit)
     }
 }
 
@@ -26,7 +26,7 @@ public abstract class DoubleReadingClock : Clock {
 
     override fun mark(): ClockMark = object : ClockMark {
         val startedAt = reading()
-        override fun elapsed(): Duration = Duration(reading() - startedAt, this@DoubleReadingClock.unit)
+        override fun elapsed(): Duration = (reading() - startedAt).toDuration(this@DoubleReadingClock.unit)
     }
 }
 
