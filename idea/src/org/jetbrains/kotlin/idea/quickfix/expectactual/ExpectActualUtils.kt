@@ -173,7 +173,7 @@ internal fun KtPsiFactory.generateClassOrObject(
     }
     declLoop@ for (originalDeclaration in originalClass.declarations.filter { !it.exists() }) {
         val descriptor = originalDeclaration.toDescriptor() ?: continue
-        if (generateExpectClass && !originalDeclaration.isEffectivelyActual(false)) continue
+        if (generateExpectClass && !originalDeclaration.isEffectivelyActual()) continue
         val generatedDeclaration: KtDeclaration = when (originalDeclaration) {
             is KtClassOrObject -> {
                 generateClassOrObject(project, generateExpectClass, originalDeclaration, outerClasses + generatedClass)

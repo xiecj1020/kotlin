@@ -14,7 +14,6 @@ import org.jetbrains.kotlin.idea.caches.project.implementingDescriptors
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToDescriptorIfAny
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToParameterDescriptorIfAny
 import org.jetbrains.kotlin.idea.core.toDescriptor
-import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.psi.KtEnumEntry
 import org.jetbrains.kotlin.psi.KtParameter
@@ -88,11 +87,7 @@ fun ModuleDescriptor.actualsFor(descriptor: MemberDescriptor, checkCompatible: B
         }
     }.filter { (it as? MemberDescriptor)?.isEffectivelyActual() == true }
 
-private fun MemberDescriptor.isEffectivelyActual(checkConstructor: Boolean = true): Boolean =
-    isActual || isEnumEntryInActual() || isConstructorInActual(checkConstructor)
-
-private fun MemberDescriptor.isConstructorInActual(checkConstructor: Boolean) =
-    checkConstructor && this is ClassConstructorDescriptor && containingDeclaration.isEffectivelyActual(checkConstructor)
+private fun MemberDescriptor.isEffectivelyActual(): Boolean = isActual || isEnumEntryInActual()
 
 private fun MemberDescriptor.isEnumEntryInActual() =
     (DescriptorUtils.isEnumEntry(this) && (containingDeclaration as? MemberDescriptor)?.isActual == true)
@@ -127,9 +122,9 @@ else
 
 fun KtDeclaration.hasMatchingExpected() = (toDescriptor() as? MemberDescriptor)?.expectedDescriptor() != null
 
-fun KtDeclaration.isEffectivelyActual(checkConstructor: Boolean = true): Boolean = when {
+fun KtDeclaration.isEffectivelyActual(): Boolean = when {
     hasActualModifier() -> true
-    this is KtEnumEntry || checkConstructor && this is KtConstructor<*> -> containingClass()?.hasActualModifier() == true
+    this is KtEnumEntry -> containingClass()?.hasActualModifier() == true
     else -> false
 }
 
